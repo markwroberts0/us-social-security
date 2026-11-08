@@ -128,3 +128,19 @@ def test_depletion_year_flows_reconcile():
     outflow = r.paid_benefits[0, k] * r.ss_cost[0, k] / r.scheduled_benefits[0, k]
     assert r.ss_assets[0, k] == 0
     assert inflow == pytest.approx(outflow, rel=1e-9)
+
+
+def test_depletion_histogram_counts_every_path(tmp_path):
+    import json
+
+    from fiscalsim.dashboard import export
+    from fiscalsim.runner import futures, run_policies
+
+    lib = library()
+    paths = futures(200, seed=11)
+    runs = run_policies({k: lib[k] for k in ["current_law", "payroll_plus_2", "cut_all_now"]}, paths=paths)
+    export(runs, {}, paths, tmp_path, 200, 11)
+    rows = json.loads((tmp_path / "depletion.json").read_text())
+    for key in runs:
+        total = sum(r["share"] for r in rows if r["option"] == key)
+        assert total == pytest.approx(100, abs=0.05), key

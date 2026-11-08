@@ -115,10 +115,14 @@ def export(runs: dict[str, Run], solvency: dict[str, Run], paths, out_dir: Path,
         late = ~np.isfinite(dep) | (dep >= 2101)
         early = dep[~late]
         if len(early):
-            edges = np.arange(np.floor(early.min()), np.floor(early.max()) + 0.5, 0.25)
-            counts = np.histogram(early, bins=np.append(edges, edges[-1] + 0.25))[0]
+            # Quarter-year bins from the one holding the earliest date through
+            # the one holding the latest, so every path lands in a bin.
+            lo = np.floor(early.min() * 4) / 4
+            hi = np.floor(early.max() * 4) / 4 + 0.25
+            edges = np.arange(lo, hi + 0.125, 0.25)
+            counts = np.histogram(early, bins=edges)[0]
             depletion += [{"option": key, "bin": float(e), "share": _r(c / n * 100, 2)}
-                          for e, c in zip(edges, counts) if c > 0]
+                          for e, c in zip(edges[:-1], counts) if c > 0]
         if late.any():
             depletion.append({"option": key, "bin": 2101.0, "share": _r(late.mean() * 100, 2)})
 
