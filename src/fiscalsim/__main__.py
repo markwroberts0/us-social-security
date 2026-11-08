@@ -76,6 +76,12 @@ def _run(args) -> int:
     out = Path(args.out)
     path = write_report(runs, det, solvency, out, args.sims, args.seed)
     print(f"wrote {path} and {out / 'summary.csv'}")
+    if args.dashboard:
+        from .dashboard import export
+
+        paths = draw_paths(trustees_2026(), args.sims, seed=args.seed)
+        files = export(runs, solvency, paths, Path(args.dashboard), args.sims, args.seed)
+        print(f"wrote {len(files)} dashboard datasets to {args.dashboard}")
     return 0
 
 
@@ -93,6 +99,7 @@ def main() -> int:
     run.add_argument("--solvency", type=float, default=0.8,
                      help="size packages that stay solvent through 2100 in this share of paths (0 to skip)")
     run.add_argument("--out", default="out")
+    run.add_argument("--dashboard", default="", help="also write the dashboard's JSON datasets to this folder")
     args = ap.parse_args()
     if args.cmd == "baseline":
         return _baseline()
