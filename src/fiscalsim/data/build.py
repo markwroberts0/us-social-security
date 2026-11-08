@@ -216,17 +216,35 @@ def fred_annual() -> None:
         cols[sid] = s.groupby(s.index.year).mean()
     df = pd.DataFrame(cols)
     df.index.name = "year"
-    # Count only complete calendar years for monthly and quarterly series.
+    # Count only complete calendar years for monthly and quarterly series. A
+    # past year may miss one month: the October 2025 shutdown left no October
+    # CPI or jobs report, and an 11-month average is still the best estimate.
     for sid in FRED_SERIES:
         s = _fred(sid)
         counts = s.groupby(s.index.year).size()
         freq = counts.median()
-        df.loc[counts[counts < freq].index, sid] = np.nan
+        current = s.index.max().year
+        short = counts[(counts < freq - (1 if freq == 12 else 0)) | (counts.index == current) & (counts < freq)]
+        df.loc[short.index, sid] = np.nan
     cpiw = _fred("CWUR0000SA0")
     q3 = cpiw[cpiw.index.month.isin([7, 8, 9])]
     q3_counts = q3.groupby(q3.index.year).size()
     df["CPIW_Q3"] = q3.groupby(q3.index.year).mean()[q3_counts == 3]
     _write(df.reset_index(), "fred_annual.csv")
+
+    # The current, incomplete year: average to date against the same months a
+    # year earlier, so the baseline can use 2026 as observed so far.
+    rows = []
+    for sid in FRED_SERIES:
+        s = _fred(sid)
+        last = s.index.max()
+        cur = s[s.index.year == last.year]
+        prev = s[(s.index.year == last.year - 1) & (s.index.month <= last.month)]
+        rows.append({
+            "series": sid, "year": last.year, "through": last.strftime("%Y-%m-%d"),
+            "avg_to_date": cur.mean(), "prior_year_same_months": prev.mean(),
+        })
+    _write(pd.DataFrame(rows), "fred_year_to_date.csv")
 
 
 def cola_history() -> None:
