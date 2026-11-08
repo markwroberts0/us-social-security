@@ -83,6 +83,20 @@ SOURCES: list[Source] = [
         "U.S. Census Bureau",
         "Resident population by single year of age and sex, July 1 2020-2025 (Vintage 2025)",
     ),
+    Source(
+        "census_est2025_totals",
+        f"{CENSUS}/popest/datasets/2020-2025/state/totals/NST-EST2025-ALLDATA.csv",
+        "census/NST-EST2025-ALLDATA.csv",
+        "U.S. Census Bureau",
+        "Population, births, deaths and net international migration, 2020-2025 (Vintage 2025)",
+    ),
+    Source(
+        "census_cps_asec_2026",
+        f"{CENSUS}/cps/datasets/2026/march/asecpub26csv.zip",
+        "census/asecpub26csv.zip",
+        "U.S. Census Bureau / BLS",
+        "CPS Annual Social and Economic Supplement, March 2026 (income year 2025), public-use CSV",
+    ),
     *[
         Source(
             f"census_np2023_{f}",

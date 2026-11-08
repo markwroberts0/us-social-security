@@ -40,10 +40,19 @@ def _save_manifest(manifest: dict) -> None:
     MANIFEST.write_text(json.dumps(dict(sorted(manifest.items())), indent=2) + "\n")
 
 
+class NotData(Exception):
+    """The server answered with a web page (an error, a key prompt) instead of the file."""
+
+
 def _download(url: str, dest: Path) -> bytes:
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=120) as resp:
+    with urllib.request.urlopen(req, timeout=300) as resp:
         body = resp.read()
+        ctype = resp.headers.get("Content-Type", "")
+    if dest.suffix not in (".html", ".htm") and (
+        "text/html" in ctype or body[:200].lstrip().lower().startswith((b"<!doctype html", b"<html"))
+    ):
+        raise NotData(f"got an HTML page ({ctype or 'no content type'}), not the file")
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_suffix(dest.suffix + ".part")
     tmp.write_bytes(body)
@@ -68,7 +77,7 @@ def fetch(keys: list[str] | None = None, refresh: bool = False) -> list[str]:
             time.sleep(wait)
         try:
             body = _download(src.url, dest)
-        except (urllib.error.URLError, TimeoutError) as exc:
+        except (urllib.error.URLError, TimeoutError, NotData) as exc:
             print(f"  FAILED {src.key}: {exc}")
             failed.append(src.key)
             continue

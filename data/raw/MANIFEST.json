@@ -1,9 +1,23 @@
 {
+  "census_cps_asec_2026": {
+    "url": "https://www2.census.gov/programs-surveys/cps/datasets/2026/march/asecpub26csv.zip",
+    "path": "raw/census/asecpub26csv.zip",
+    "bytes": 139103894,
+    "sha256": "fe819d0d2fc4470c282e76c247b8aa8b6054811619730307e9f2fe6186707d93",
+    "retrieved": "2026-11-08"
+  },
   "census_est2025_agesex": {
     "url": "https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/national/asrh/nc-est2025-agesex-res.csv",
     "path": "raw/census/nc-est2025-agesex-res.csv",
     "bytes": 18282,
     "sha256": "6436d4f6972d415caf14cb20776807bc031fc9f1bfc9d6ff26055d592a2b0230",
+    "retrieved": "2026-11-08"
+  },
+  "census_est2025_totals": {
+    "url": "https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/state/totals/NST-EST2025-ALLDATA.csv",
+    "path": "raw/census/NST-EST2025-ALLDATA.csv",
+    "bytes": 53555,
+    "sha256": "92188e29cb0a67dcf95afa7d6c47359409782f086478b70ea4128eb70e223ca9",
     "retrieved": "2026-11-08"
   },
   "census_np2023_a1": {
