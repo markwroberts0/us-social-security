@@ -34,6 +34,12 @@ PV_TARGETS = {
     "oasdi_assets_2026": 2.6e12,
     "hi_taxable_payroll": 810.5e12,
 }
+# The Trustees' summarized rates over 2026-2100, from the same table: these
+# ratios, not the dollar PVs, are what the actuarial balance is built from.
+COST_RATE_TARGET = PV_TARGETS["oasdi_cost"] / PV_TARGETS["oasdi_taxable_payroll"]  # 17.92%
+INCOME_RATE_TARGET = PV_TARGETS["oasdi_revenue"] / PV_TARGETS["oasdi_taxable_payroll"]  # 13.31%
+TAXABLE_RATIO_DECLINE = 0.02
+DI_RISE = 0.30
 # MTR Table V.F1 note (p. 216): calendar 2025.
 OASDI_TAXABLE_PAYROLL_2025 = 11_043e9
 HI_TAXABLE_PAYROLL_2025 = 13_277e9
@@ -113,6 +119,7 @@ def _initial(base, anchors, a: Assumptions) -> Calibration:
         taxable_ratio=np.full(T, OASDI_TAXABLE_PAYROLL_2025 / HI_TAXABLE_PAYROLL_2025),
         tob_rate=np.full(T, anchors["tob_rate_2025"]),
         di_prevalence=np.ones(T),
+        cohort_level=np.ones(T),
         awi_2025=float(awi_2025),
         benefits_2025=anchors["benefits_2025"],
         admin_rate=anchors["admin_rate"],
@@ -161,61 +168,76 @@ def calibrate(assumptions_name: str = "trustees_2026") -> tuple[Calibration, dic
     resid = cms_pay / r1.covered_earnings[0]
     c = replace(c, payroll_residual=resid, ref_p65=r1.pop_65_plus[0], ref_awi=r1.awi[0])
 
-    # Pass 2: taxable ratio. PV of taxable payroll is linear in the ultimate ratio.
-    r2 = Model(base, c, budget).run(det)
-    y = r2.tf_yield
+    # Pass 2: taxable ratio. The Trustees' OASDI discount factors are not
+    # published outside the SSA tables, and the payroll PV is too sensitive
+    # to them to pin this path (its implied 2035 value ranges from -7% to +9%
+    # across plausible conventions). Instead: a 2% decline over 2026-2035 as
+    # wages above the cap grow, then flat. Their share has been roughly flat
+    # since 2000 (15-17%); replace with TR Table VI.G6 when available.
     tau0 = c.taxable_ratio[0]
-    shape = np.clip(np.arange(T) / 10.0, 0, 1)
-    pv_ce = lambda tr: present_value(r2.covered_earnings * tr[None], y)[0]  # noqa: E731
-    pv_at_0 = pv_ce(np.full(T, tau0))
-    pv_slope = pv_ce(shape) - 0.0
-    tau_ult = tau0 + (PV_TARGETS["oasdi_taxable_payroll"] - pv_at_0) / pv_slope
-    tau = tau0 + (tau_ult - tau0) * shape
+    tau = tau0 * (1 - TAXABLE_RATIO_DECLINE * np.clip(np.arange(T) / 10.0, 0, 1))
     c = replace(c, taxable_ratio=tau)
 
-    # Pass 3: benefit-tax path. PV revenue is linear in the ultimate share.
-    r3 = Model(base, c, budget).run(det)
-    y = r3.tf_yield
-    pv_payroll_tax = present_value(r3.ss_payroll_tax, y)[0]
-    t0 = anchors["tob_rate_2025"]
-
-    def pv_tob(ult):
-        return present_value(r3.scheduled_benefits * _tob_path(t0, ult)[None], y)[0]
-
-    lo, hi = pv_tob(0.0), pv_tob(0.10)
-    ult = 0.10 * (PV_TARGETS["oasdi_revenue"] - pv_payroll_tax - lo) / (hi - lo)
-    c = replace(c, tob_rate=_tob_path(t0, ult))
-
-    # Pass 4: disability prevalence. The Trustees assume disability incidence
-    # recovers from its 2020s lows; prevalence follows over about 20 years.
-    # Its size is fitted to the PV of cost, the one target left.
+    # Disability: the Trustees assume incidence recovers from its 2020s lows.
+    # We take a 30% rise in disability benefits per person by 2045. CPS
+    # identifies only ~62% of DI benefits (6.2% of all benefits vs 10.0% in
+    # Treasury data), so the multiplier on the CPS-identified part is larger.
+    di_true_share = _omb("DI", "Benefit payments (1)", 2025) / (
+        _omb("OASI", "Benefit payments (1)", 2025) + _omb("DI", "Benefit payments (1)", 2025))
+    di_cps_share = float((base.pop * base.ss_per_capita * base.di_share).sum() / (base.pop * base.ss_per_capita).sum())
     ramp20 = np.clip(np.arange(T) / 20.0, 0, 1)
+    c = replace(c, di_prevalence=1 + DI_RISE * (di_true_share / di_cps_share) * ramp20)
 
-    def pv_cost(d):
-        cc = replace(c, di_prevalence=1 + d * ramp20)
-        rr = Model(base, cc, budget).run(det)
-        return present_value(rr.ss_cost, rr.tf_yield)[0]
-
+    # Passes 3-4, repeated because the depletion date moves the discount
+    # rates: fit the summarized income rate (benefit-tax share) and the
+    # summarized cost rate (benefit level of cohorts turning 62 after 2025,
+    # growing at a constant rate through 2050: rising career earnings of
+    # women and later claiming lift each new cohort above the cross-section).
     from scipy.optimize import brentq
 
-    d_ult = brentq(lambda d: pv_cost(d) - PV_TARGETS["oasdi_cost"], -0.5, 3.0)
-    c = replace(c, di_prevalence=1 + d_ult * ramp20)
+    t0 = anchors["tob_rate_2025"]
+    yrs = np.minimum(np.arange(T), 25)
+    ult, g = 0.06, 0.0
+    for _ in range(4):
+        r3 = Model(base, c, budget).run(det)
+        y = r3.discount_rate
+        pv_tp = present_value(r3.taxable_payroll, y)[0]
+        pv_payroll_tax = present_value(r3.ss_payroll_tax, y)[0]
+
+        def income_rate(u):
+            return (pv_payroll_tax + present_value(r3.scheduled_benefits * _tob_path(t0, u)[None], y)[0]) / pv_tp
+
+        ult = brentq(lambda u: income_rate(u) - INCOME_RATE_TARGET, 0.0, 0.2)
+        c = replace(c, tob_rate=_tob_path(t0, ult))
+
+        def cost_rate(gg):
+            rr = Model(base, replace(c, cohort_level=(1 + gg) ** yrs), budget).run(det)
+            return present_value(rr.ss_cost, rr.discount_rate)[0] / present_value(rr.taxable_payroll, rr.discount_rate)[0]
+
+        g = brentq(lambda gg: cost_rate(gg) - COST_RATE_TARGET, -0.02, 0.03)
+        c = replace(c, cohort_level=(1 + g) ** yrs)
+    d_ult = c.di_prevalence[-1] - 1
+    tau_ult = tau[-1]
 
     final = Model(base, c, budget).run(det)
     report = fit_report(final, c, extra={"taxable_ratio_ultimate": tau_ult, "tob_rate_ultimate": ult,
-                                          "di_prevalence_ultimate": 1 + d_ult})
+                                          "di_prevalence_ultimate": 1 + d_ult,
+                                          "cohort_level_growth": g, "cohort_level_2050": float(c.cohort_level[-1])})
     return c, report
 
 
 def fit_report(r: Results, c: Calibration, extra: dict | None = None) -> dict:
-    y = r.tf_yield
+    y = r.discount_rate
     pv = lambda v: present_value(v, y)[0]  # noqa: E731
     pv_pay = pv(r.taxable_payroll)
     rep = {
+        "summarized_income_rate_pct": (pv(r.ss_payroll_tax + r.ss_benefit_tax_scheduled) / pv_pay * 100,
+                                       INCOME_RATE_TARGET * 100),
+        "summarized_cost_rate_pct": (pv(r.ss_cost) / pv_pay * 100, COST_RATE_TARGET * 100),
         "pv_taxable_payroll": (pv_pay, PV_TARGETS["oasdi_taxable_payroll"]),
-        "pv_revenue": (pv(r.ss_payroll_tax + r.ss_benefit_tax_scheduled), PV_TARGETS["oasdi_revenue"]),
         "pv_cost": (pv(r.ss_cost), PV_TARGETS["oasdi_cost"]),
-        "pv_hi_payroll": (present_value(r.covered_earnings, r.tf_yield)[0], PV_TARGETS["hi_taxable_payroll"]),
+        "pv_hi_payroll": (present_value(r.covered_earnings, r.hi_discount_rate)[0], PV_TARGETS["hi_taxable_payroll"]),
+        "pv_gdp": (present_value(r.gdp, r.hi_discount_rate)[0], 1853.5e12),
         "depletion_year": float(r.ss_depletion_year[0]),
         "hi_depletion_year": float(r.hi_depletion_year[0]),
         "payroll_residual_2050": float(c.payroll_residual[YEARS == 2050][0]),

@@ -28,6 +28,11 @@ class Policy:
     taxable_max_start: int = 2027
     taxable_max_phase_years: int = 1
     benefit_credit_factor: float = 0.0  # PIA factor on newly taxed earnings; 0 = no credit
+    # Also tax earnings above a fixed dollar threshold (the "donut"): wages
+    # between the current cap and the threshold stay untaxed until the cap,
+    # which grows with wages, passes the threshold.
+    tax_above_threshold: float = 0.0  # dollars; 0 = off
+    threshold_indexed: bool = False
 
     # --- Benefits
     cola_adjustment: float = 0.0  # added to every COLA (-0.003 is roughly chained CPI)
@@ -39,11 +44,14 @@ class Policy:
     new_award_cut_start: int = 2030
     new_award_cut_phase_years: int = 10
     new_award_cut_progressive: bool = False  # spare low earners, as progressive indexing would
+    all_benefit_cut: float = 0.0  # proportional cut to every benefit, current and future
+    all_benefit_cut_start: int = 2027
 
     # --- General revenue
     general_revenue: str = "none"  # "none" | "fill_gap" | "share_of_payroll"
     general_revenue_share: float = 0.0  # of taxable payroll, when "share_of_payroll"
     general_revenue_start: int = 2027
+    general_revenue_financing: str = "borrow"  # "borrow" | "income_tax" (raise the same amount)
 
     # --- Rest of the budget (percent of GDP, positive = more revenue / less spending)
     income_tax_change: float = 0.0

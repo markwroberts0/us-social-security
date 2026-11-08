@@ -28,7 +28,15 @@ T = len(YEARS)
 OASDI_RATE = 0.124
 ENTITLEMENT_AGE = 62
 YOUNG_TURNOVER = 0.15  # share of the under-62 benefit stock newly awarded each year
-TF_YIELD_ADJUST = 0.12  # share of the gap to new-issue rates closed each year (portfolio turnover)
+# Share of the gap between the trust funds' portfolio yield and the rate on new
+# special issues that closes each year. Fitted (0.042) to OMB's projected OASI
+# interest and balances for FY2026-2031 (Table 13.1): with bonds of up to 15
+# years and a shrinking fund that buys few new ones, the yield moves slowly.
+TF_YIELD_ADJUST = 0.042
+# Once reserves are gone, the Trustees' hypothetical fund (which still pays
+# scheduled benefits for actuarial measures) borrows at new-issue rates, so
+# its yield, the discount rate for present values, converges to them quickly.
+POST_DEPLETION_ADJUST = 0.5
 DEBT_RATE_ADJUST = 0.20  # same for marketable federal debt
 PAYROLL_UNEMPLOYMENT_ELASTICITY = 1.2  # % payroll lost per point of unemployment above baseline
 DEBT_RATE_SENSITIVITY = 0.0002  # 2 basis points per point of debt-to-GDP above 2025 (CBO rule of thumb)
@@ -76,6 +84,7 @@ class Calibration:
     taxable_ratio: np.ndarray  # (T,) OASDI taxable payroll / covered earnings
     tob_rate: np.ndarray  # (T,) OASDI income from taxing benefits / benefits
     di_prevalence: np.ndarray  # (T,) disability benefits per person relative to 2025, by year
+    cohort_level: np.ndarray  # (T,) benefit level of the cohort turning 62 in each year, relative to the 2025 cross-section
     awi_2025: float
     benefits_2025: float  # calendar 2025 OASDI benefits
     admin_rate: float  # administration and railroad interchange, share of benefits
@@ -118,12 +127,14 @@ class Results:
     ss_interest: np.ndarray
     ss_cost: np.ndarray  # scheduled benefits plus administration
     ss_assets: np.ndarray  # end of year
-    tf_yield: np.ndarray
+    tf_yield: np.ndarray  # portfolio yield, earned on reserves
+    discount_rate: np.ndarray  # yield of the Trustees' hypothetical fund, which borrows at new-issue rates once reserves are gone
     hi_income: np.ndarray
     hi_cost: np.ndarray
     hi_assets: np.ndarray
     hi_payable_ratio: np.ndarray
     hi_yield: np.ndarray
+    hi_discount_rate: np.ndarray
     smi_cost: np.ndarray
     revenues: np.ndarray
     outlays: np.ndarray
@@ -185,22 +196,44 @@ class Model:
                                                                         p.payroll_rate_phase_years)
         dist = wage_distribution()
         cap_rel = current_law_cap_rel()
+        # The calibrated taxable ratio falls over the first decade. Read that as
+        # wages above the cap growing (a wider top tail), scaling the IRS 2023
+        # tail by `tail`, so cap options tax what the baseline leaves untaxed.
+        coverage = self.c.taxable_ratio[0] / dist.share_below(cap_rel)  # OASDI-covered share of HI payroll
+        tail = (1 - self.c.taxable_ratio / coverage) / dist.excess_share(cap_rel)
+        self.tail = tail
+
+        def below(k_rel: float, t: int) -> float:
+            return 1.0 - tail[t] * dist.excess_share(k_rel)
+
         m = p.taxable_max_multiple
         phase = ramp(YEARS, p.taxable_max_start, p.taxable_max_phase_years)
         if m == 1.0:
             mult = np.ones(T)
         elif np.isinf(m):
-            full = 1.0 / dist.share_below(cap_rel)
-            mult = 1.0 + (full - 1.0) * phase
+            mult = 1.0 + (1.0 / np.array([below(cap_rel, t) for t in range(T)]) - 1.0) * phase
         else:
-            base_below = dist.share_below(cap_rel)
-            mult = np.array([dist.share_below(cap_rel * (1 + (m - 1) * f)) / base_below for f in phase])
+            mult = np.array([below(cap_rel * (1 + (m - 1) * phase[t]), t) / below(cap_rel, t) for t in range(T)])
         self.taxable_mult = mult
+        # Donut: tax wages above a dollar threshold, evaluated per path inside
+        # run() because the threshold's real value depends on simulated wages.
+        self.donut_grid = None
+        if p.tax_above_threshold > 0:
+            grid = np.geomspace(0.5, 400, 600)
+            self.donut_grid = (np.log(grid), np.array([dist.excess_share(g) for g in grid]), cap_rel)
         # Benefit credit on newly taxed wages, by cohort reaching 62 in each
         # year: the average extra taxable share over the 35 years before 62.
+        # For the donut, use its extra share along the baseline wage path.
+        credit_mult = mult
+        if p.tax_above_threshold > 0:
+            awi0 = self.c.ref_awi[0]
+            thr = np.where(p.threshold_indexed, p.tax_above_threshold * self.c.ref_awi / awi0, p.tax_above_threshold)
+            k_rel = np.maximum(thr / self.c.ref_awi, cap_rel)
+            extra_det = np.array([tail[t] * dist.excess_share(x) / below(cap_rel, t) for t, x in enumerate(k_rel)])
+            credit_mult = 1 + extra_det * (YEARS >= p.taxable_max_start)
         self.credit_adj = np.ones(T)
-        if p.benefit_credit_factor > 0 and m != 1.0:
-            hist = {int(y): v for y, v in zip(YEARS, mult)}
+        if p.benefit_credit_factor > 0 and (m != 1.0 or p.tax_above_threshold > 0):
+            hist = {int(y): v for y, v in zip(YEARS, credit_mult)}
             for k, y in enumerate(YEARS):
                 career = [hist.get(int(yy), 1.0) for yy in range(y - 35, y)]
                 extra = np.mean(career) - 1.0
@@ -212,6 +245,7 @@ class Model:
             # and cuts the top more; on aggregate benefits it bites about 75% as hard.
             cut = cut * 0.75
         self.new_award_adj = 1.0 - cut
+        self.all_cut = 1.0 - p.all_benefit_cut * (YEARS >= p.all_benefit_cut_start)
         self.budget_phase = ramp(YEARS, p.budget_change_start, p.budget_change_phase_years)
         self.gr_on = YEARS >= p.general_revenue_start
 
@@ -236,6 +270,8 @@ class Model:
         tf_yield = np.full(N, c.tf_yield_2025)
         A_hi = np.full(N, c.hi_assets_2025)
         hi_yield = np.full(N, c.hi_yield_2025)
+        disc = np.full(N, c.tf_yield_2025)
+        hi_disc = np.full(N, c.hi_yield_2025)
         debt = np.full(N, bud.debt_held_by_public_2025)
         debt_rate = np.full(N, bud.debt_rate_2025)
         health = np.ones(N)  # cumulative excess health cost factor
@@ -250,6 +286,7 @@ class Model:
         dist_debt_gdp0 = None
 
         di_paths = paths.disability if paths.disability is not None else np.ones((N, T))
+        self._donut_extra = np.zeros((N, T))
         for k, year in enumerate(YEARS):
             paths_di = di_paths[:, k]
             # ---- 1. Population -------------------------------------------------------
@@ -282,6 +319,14 @@ class Model:
             cyc = 1 - PAYROLL_UNEMPLOYMENT_ELASTICITY * (paths.unemployment[:, k] - c.ref_unemployment[k])
             ce = (P * e_profile[None]).sum(axis=(1, 2)) * (awi / c.awi_2025) * c.payroll_residual[k] * cyc
             tp = ce * c.taxable_ratio[k] * self.taxable_mult[k]
+            if self.donut_grid is not None and year >= p.taxable_max_start:
+                lg, ex, cap_rel = self.donut_grid
+                thr = p.tax_above_threshold * ((awi / awi_hist[2025]) if p.threshold_indexed else 1.0)
+                k_rel = np.maximum(thr / awi, cap_rel)  # never below the current-law cap
+                below_cap = 1.0 - self.tail[k] * np.interp(np.log(cap_rel), lg, ex)
+                extra = self.tail[k] * np.interp(np.log(k_rel), lg, ex) / below_cap
+                tp = tp * (1 + extra)
+                self._donut_extra[:, k] = extra
             gdp = ce * c.gdp_to_payroll[k]
 
             # ---- 3. Social Security ------------------------------------------------------
@@ -296,7 +341,7 @@ class Model:
                 w100 = P_prev[:, :, 100].sum(axis=1) * np.exp(-mx[:, :, 100].mean(axis=1))
                 Xn[:, 100] = (w99 * X[:, 99] + w100 * X[:, 100]) / np.maximum(w99 + w100, 1) * (1 + cola_eff)
                 lvl = awi_hist[year - 2] / b.awi.loc[2023] if (year - 2) in awi_hist else b.awi.loc[year - 2] / b.awi.loc[2023]
-                Xn[:, 62] = lvl * self.fra_adj[k] * self.credit_adj[k] * self.new_award_adj[k]
+                Xn[:, 62] = lvl * self.fra_adj[k] * self.credit_adj[k] * self.new_award_adj[k] * c.cohort_level[k]
                 Xn[:, :62] = 0.0
                 X = Xn
                 Xy = (1 - YOUNG_TURNOVER) * Xy * (1 + cola_eff) + YOUNG_TURNOVER * lvl * self.credit_adj[k] * self.new_award_adj[k]
@@ -305,7 +350,7 @@ class Model:
                 if k > 0 else self.theta[None]
             per_capita = theta * np.concatenate(
                 [np.broadcast_to(Xy[:, None], (N, 62)), X[:, 62:]], axis=1)[:, None, :]
-            sched = (P * per_capita).sum(axis=(1, 2))
+            sched = (P * per_capita).sum(axis=(1, 2)) * self.all_cut[k]
             cost = sched * (1 + c.admin_rate)
 
             payroll_tax = self.payroll_rate[k] * tp
@@ -354,6 +399,10 @@ class Model:
             out["ss_cost"][:, k] = cost
             out["ss_assets"][:, k] = A
             out["tf_yield"][:, k] = tf_yield
+            if k > 0:
+                depleted = np.isfinite(ss_dep) & (ss_dep < year + 1)
+                disc = np.where(depleted, disc + POST_DEPLETION_ADJUST * (new_issue - disc), tf_yield)
+            out["discount_rate"][:, k] = disc
 
             # ---- 4. Medicare -----------------------------------------------------------
             p65 = P[:, :, 65:].sum(axis=(1, 2))
@@ -382,6 +431,10 @@ class Model:
             out["hi_assets"][:, k] = A_hi
             out["hi_payable_ratio"][:, k] = hi_pay
             out["hi_yield"][:, k] = hi_yield
+            if k > 0:
+                hdep = np.isfinite(hi_dep) & (hi_dep < year + 1)
+                hi_disc = np.where(hdep, hi_disc + POST_DEPLETION_ADJUST * (new_issue - hi_disc), hi_yield)
+            out["hi_discount_rate"][:, k] = hi_disc
             out["smi_cost"][:, k] = smi
 
             # ---- 5. Budget --------------------------------------------------------------
@@ -391,6 +444,8 @@ class Model:
                        + bud.other_social_insurance[k] + p.income_tax_change * ph)
                 + payroll_tax + hi_income * 0.89  # HI payroll taxes; benefit taxes are in individual income tax
             )
+            if p.general_revenue_financing == "income_tax":
+                revenues = revenues + gr  # the transfer is raised, not borrowed
             medicare_net = hi_cost * hi_pay + smi * (1 - c.smi_premium_share)
             program = (
                 paid * (1 + c.admin_rate) + medicare_net

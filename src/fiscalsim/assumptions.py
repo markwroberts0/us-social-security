@@ -88,10 +88,10 @@ def trustees_2026() -> Assumptions:
         # the 2026 average is ours.
         unemployment=_path({BASE_YEAR: fred.UNRATE.get(2025, 4.2) / 100, 2026: unemp_2026, 2030: 0.045}),
         # 2.3% ultimate (MTR Table II.C1), reached by year 15 (MTR p. 74). The
-        # 2025 starting point (1.1%) is fitted: it is the value at which this
+        # 2025 starting point (1.0%) is fitted: it is the value at which this
         # model's HI yields reproduce both present values in MTR Table V.F2
         # (HI taxable payroll $810.5T and GDP $1,853.5T).
-        real_interest=_path({BASE_YEAR: 0.011, 2040: 0.023}),
+        real_interest=_path({BASE_YEAR: 0.010, 2040: 0.023}),
         notes={
             "tfr": "1.58 in 2025 (Census births) rising linearly to 1.75 in 2050",
             "immigration": "0.4M in 2026 rising to 1.177M by 2030",
