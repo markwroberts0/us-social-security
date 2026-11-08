@@ -67,8 +67,8 @@ def _ar1(x: pd.Series) -> tuple[float, float, pd.Series]:
 def estimate(start: int = 1983, end: int = 2025) -> StochasticSpec:
     b = load()
     f = b.fred
-    cpi = f.CWUR0000SA0.pct_change()
-    wage = b.awi.pct_change()
+    cpi = f.CWUR0000SA0.pct_change(fill_method=None)
+    wage = b.awi.pct_change(fill_method=None)
     real_wage = (1 + wage) / (1 + cpi) - 1
     unemp = f.UNRATE / 100
     real_rate = f.GS10 / 100 - cpi.shift(1).rolling(3).mean()  # ex-ante: 10-year yield less trailing inflation

@@ -256,6 +256,11 @@ def cola_history() -> None:
     """
     fa = pd.read_csv(OUT / "fred_annual.csv").set_index("year")
     q3 = fa.CPIW_Q3.dropna()
+    # Before 2007 BLS published CPI-W to one decimal. Rounding the Q3 average
+    # to two decimals then (three since) reproduces every published COLA from
+    # 1984 to 2025 except 1990 (5.3 here, 5.4 published), likely a later
+    # revision to the 1989-90 index values.
+    q3 = pd.Series([round(v, 2 if y < 2007 else 3) for y, v in q3.items()], index=q3.index)
     rows, base = [], None
     for y, v in q3.items():
         if y < 1975:

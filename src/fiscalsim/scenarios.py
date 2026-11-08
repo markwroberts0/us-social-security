@@ -98,3 +98,67 @@ def solve(param: str, start: dict | None = None, lo: float = 0.0, hi: float = 0.
         return float(actuarial_balance(r)["actuarial_balance"][0])
 
     return brentq(balance, lo, hi, xtol=1e-6)
+
+
+def solve_probability(
+    template: Policy,
+    param: str,
+    target: float,
+    paths,
+    lo: float,
+    hi: float,
+    until: int = 2100,
+    tol: float = 1e-4,
+) -> tuple[float, float]:
+    """Smallest value of `param` at which reserves last through `until` in at
+    least `target` of the simulated paths. Paths are fixed, so the share is
+    monotone in the lever and bisection applies. Returns (value, share)."""
+
+    def share(v: float) -> float:
+        r = baseline_model(template.with_(**{param: v})).run(paths)
+        dep = r.ss_depletion_year
+        return float(((~np.isfinite(dep)) | (dep >= until + 1)).mean())
+
+    if share(hi) < target:
+        return float("nan"), share(hi)
+    while hi - lo > tol:
+        mid = 0.5 * (lo + hi)
+        if share(mid) >= target:
+            hi = mid
+        else:
+            lo = mid
+    return hi, share(hi)
+
+
+def solvency_packages(paths, target: float = 0.8) -> dict[str, Policy]:
+    """Four ways to keep reserves positive through 2100 in `target` of paths,
+    each sized by solving for its last lever."""
+    cap90 = cap_multiple_for_coverage(0.90)
+    templates = {
+        "solvent_payroll_only": (
+            Policy(name="Payroll tax only", description="Rate rise from 2027, nothing else."),
+            "payroll_rate_increase", 0.0, 0.12,
+        ),
+        "solvent_cut_only": (
+            Policy(name="Benefit cuts only", description="Every benefit cut by the same share from 2027."),
+            "all_benefit_cut", 0.0, 0.6,
+        ),
+        "solvent_no_cap_plus_rate": (
+            Policy(name="No taxable maximum, then rate", taxable_max_multiple=np.inf, taxable_max_phase_years=5,
+                   benefit_credit_factor=0.15, description="All wages taxed by 2031 with credit, plus a rate rise."),
+            "payroll_rate_increase", 0.0, 0.10,
+        ),
+        "solvent_balanced": (
+            Policy(name="Balanced mix", taxable_max_multiple=cap90, taxable_max_phase_years=10,
+                   benefit_credit_factor=0.15, cola_adjustment=-0.003, fra_target_years=68.0,
+                   description="Cover 90% of wages, chained CPI, retirement age 68, plus a rate rise."),
+            "payroll_rate_increase", 0.0, 0.10,
+        ),
+    }
+    out = {}
+    for key, (tpl, param, lo, hi) in templates.items():
+        value, share = solve_probability(tpl, param, target, paths, lo, hi)
+        label = f"{value * 100:.2f} points" if param == "payroll_rate_increase" else f"{value:.1%}"
+        out[key] = tpl.with_(**{param: value}, description=f"{tpl.description} Solved: {param.replace('_', ' ')} = "
+                                                            f"{label} ({share:.0%} of paths solvent through 2100).")
+    return out
