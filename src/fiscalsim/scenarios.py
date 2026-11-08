@@ -89,13 +89,17 @@ def library() -> dict[str, Policy]:
 
 
 def solve(param: str, start: dict | None = None, lo: float = 0.0, hi: float = 0.1) -> float:
-    """Smallest value of one Policy field that brings the deterministic 75-year balance to zero."""
+    """Smallest value of one Policy field that brings the deterministic 75-year balance to zero.
+
+    Every candidate is valued at the current-law discount rates, as run_policies
+    scores options, so the answer also scores zero in the report."""
     paths = baseline_paths()
+    base_rates = baseline_model().run(paths).discount_rate
 
     def balance(v: float) -> float:
         pol = Policy(name="solve", **(start or {}), **{param: v})
         r = baseline_model(pol).run(paths)
-        return float(actuarial_balance(r)["actuarial_balance"][0])
+        return float(actuarial_balance(r, base_rates)["actuarial_balance"][0])
 
     return brentq(balance, lo, hi, xtol=1e-6)
 

@@ -47,7 +47,7 @@ Benefit-side changes that phase in over decades barely move the 2034 date, even 
 | No taxable maximum (with credit), then rate | +3.20 points |
 | Cover 90% of wages, chained CPI, retirement age 68, then rate | +3.26 points |
 
-These exceed what closes the deterministic 75-year balance (a 4.76-point rate rise from 2027, or a 27.3% cut to every benefit). Costs keep rising after 2075, and the requirement is solvency in most futures, not on average.
+These exceed what closes the deterministic 75-year balance (a 4.51-point rate rise from 2027, or a 26.1% cut to every benefit). Costs keep rising after 2075, and the requirement is solvency in most futures, not on average.
 
 The debt projections are the weakest part of the model (see Limitations). Under current law, debt held by the public reaches about 170% of GDP in 2050, with an 80% range of 117% to 250%.
 
