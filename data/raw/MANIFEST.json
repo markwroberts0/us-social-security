@@ -1,0 +1,296 @@
+{
+  "census_est2025_agesex": {
+    "url": "https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/national/asrh/nc-est2025-agesex-res.csv",
+    "path": "raw/census/nc-est2025-agesex-res.csv",
+    "bytes": 18282,
+    "sha256": "6436d4f6972d415caf14cb20776807bc031fc9f1bfc9d6ff26055d592a2b0230",
+    "retrieved": "2026-11-08"
+  },
+  "census_np2023_a1": {
+    "url": "https://www2.census.gov/programs-surveys/popproj/datasets/2023/2023-popproj/np2023_a1.csv",
+    "path": "raw/census/np2023_a1.csv",
+    "bytes": 88288,
+    "sha256": "c692bbdf86982d9d1317b825a8926bf82b197d060252dd53324e90b6f8280223",
+    "retrieved": "2026-11-08"
+  },
+  "census_np2023_a2": {
+    "url": "https://www2.census.gov/programs-surveys/popproj/datasets/2023/2023-popproj/np2023_a2.csv",
+    "path": "raw/census/np2023_a2.csv",
+    "bytes": 1229613,
+    "sha256": "5864ce7deb026784c9478ac9098fd53f94e826559778e3242540d286ff4a6275",
+    "retrieved": "2026-11-08"
+  },
+  "census_np2023_a3": {
+    "url": "https://www2.census.gov/programs-surveys/popproj/datasets/2023/2023-popproj/np2023_a3.csv",
+    "path": "raw/census/np2023_a3.csv",
+    "bytes": 29064,
+    "sha256": "bef9249dd41504d29c66ddfd26b5e55518769a0e8fb2a7a10966c30081cf65ef",
+    "retrieved": "2026-11-08"
+  },
+  "census_np2023_a4": {
+    "url": "https://www2.census.gov/programs-surveys/popproj/datasets/2023/2023-popproj/np2023_a4.csv",
+    "path": "raw/census/np2023_a4.csv",
+    "bytes": 1229727,
+    "sha256": "944442ff6636669f566999246ee265f77ea01afcba690dc765434a2c3bc55642",
+    "retrieved": "2026-11-08"
+  },
+  "census_np2023_a5": {
+    "url": "https://www2.census.gov/programs-surveys/popproj/datasets/2023/2023-popproj/np2023_a5.csv",
+    "path": "raw/census/np2023_a5.csv",
+    "bytes": 3122,
+    "sha256": "bef92d0bd69348f14e1f3272f8e8b6f02ff38ebfce391525fee1354b8d0c86ea",
+    "retrieved": "2026-11-08"
+  },
+  "census_np2023_d1_mid": {
+    "url": "https://www2.census.gov/programs-surveys/popproj/datasets/2023/2023-popproj/np2023_d1_mid.csv",
+    "path": "raw/census/np2023_d1_mid.csv",
+    "bytes": 2868984,
+    "sha256": "1532822751d0d08b69bb9947e4f64cb2d2217229000bd7a97997d305b890d16f",
+    "retrieved": "2026-11-08"
+  },
+  "census_np2023_d2_mid": {
+    "url": "https://www2.census.gov/programs-surveys/popproj/datasets/2023/2023-popproj/np2023_d2_mid.csv",
+    "path": "raw/census/np2023_d2_mid.csv",
+    "bytes": 21675,
+    "sha256": "2c492a78bb33ed5b09da8d1d482bd27060342162193a4e2a21786db17e89da58",
+    "retrieved": "2026-11-08"
+  },
+  "census_np2023_d3_mid": {
+    "url": "https://www2.census.gov/programs-surveys/popproj/datasets/2023/2023-popproj/np2023_d3_mid.csv",
+    "path": "raw/census/np2023_d3_mid.csv",
+    "bytes": 489290,
+    "sha256": "39958f5ccfcd44492fc3f31c065336c909589739aa48b055b14339065040f9d8",
+    "retrieved": "2026-11-08"
+  },
+  "census_np2023_d4_mid": {
+    "url": "https://www2.census.gov/programs-surveys/popproj/datasets/2023/2023-popproj/np2023_d4_mid.csv",
+    "path": "raw/census/np2023_d4_mid.csv",
+    "bytes": 516243,
+    "sha256": "9683e4d31fc6d1cc13b7d5f9fe3ff6e1ff8ac4178fa31c4aefc25567514840dc",
+    "retrieved": "2026-11-08"
+  },
+  "census_np2023_d5_mid": {
+    "url": "https://www2.census.gov/programs-surveys/popproj/datasets/2023/2023-popproj/np2023_d5_mid.csv",
+    "path": "raw/census/np2023_d5_mid.csv",
+    "bytes": 1522877,
+    "sha256": "07099471f96a2146d65138de6102f77f395c7f9904f5ac069b08b845cdbf8fc3",
+    "retrieved": "2026-11-08"
+  },
+  "cms_mtr2026_report": {
+    "url": "https://www.cms.gov/files/document/2026-medicare-trustees-report.pdf",
+    "path": "raw/cms/2026-medicare-trustees-report.pdf",
+    "bytes": 2844621,
+    "sha256": "ffa56b9137006872300b0346149eae1613d09a172b6ba118aad48e66dfc48fa8",
+    "retrieved": "2026-11-08"
+  },
+  "cms_mtr2026_tables": {
+    "url": "https://www.cms.gov/files/zip/2026-expanded-supplementary-tables-figures.zip",
+    "path": "raw/cms/2026-expanded-supplementary-tables-figures.zip",
+    "bytes": 687408,
+    "sha256": "67675b3375a4db8f678d67ef078dca15cfe43831600fd499e1bec2651f2ed15b",
+    "retrieved": "2026-11-08"
+  },
+  "fred_a091rc1q027sbea": {
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=A091RC1Q027SBEA",
+    "path": "raw/fred/A091RC1Q027SBEA.csv",
+    "bytes": 5929,
+    "sha256": "0f0ec543ea44098d314a26102f62963ca724b4bbacb7cea0ee3eeea1cad66be0",
+    "retrieved": "2026-11-08"
+  },
+  "fred_a576rc1": {
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=A576RC1",
+    "path": "raw/fred/A576RC1.csv",
+    "bytes": 14502,
+    "sha256": "23e1ae6292e028ffbd9d01dd1f6c70fd274c595e1bbf07133c78195783708db9",
+    "retrieved": "2026-11-08"
+  },
+  "fred_civpart": {
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CIVPART",
+    "path": "raw/fred/CIVPART.csv",
+    "bytes": 15157,
+    "sha256": "e780815329d133f6a4948ea1cc1589a56a6501ff3018684dbb5fcc568312de7b",
+    "retrieved": "2026-11-08"
+  },
+  "fred_compnfb": {
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=COMPNFB",
+    "path": "raw/fred/COMPNFB.csv",
+    "bytes": 5715,
+    "sha256": "b39626b287d197524e3455f0147be4d66eb4933f37023ddbcf77a1a1c60218c2",
+    "retrieved": "2026-11-08"
+  },
+  "fred_cpiaucsl": {
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL",
+    "path": "raw/fred/CPIAUCSL.csv",
+    "bytes": 17763,
+    "sha256": "8556b710094027fa4724641d48be620cc37c04abfa15a0c496378cf1146c1549",
+    "retrieved": "2026-11-08"
+  },
+  "fred_cwur0000sa0": {
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CWUR0000SA0",
+    "path": "raw/fred/CWUR0000SA0.csv",
+    "bytes": 25102,
+    "sha256": "478dfc819fc97fe540d44a30b1e42ae46e5b356160e39a51485e2cdf315508a6",
+    "retrieved": "2026-11-08"
+  },
+  "fred_fygfgdq188s": {
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=FYGFGDQ188S",
+    "path": "raw/fred/FYGFGDQ188S.csv",
+    "bytes": 4550,
+    "sha256": "837d0a70e242126d8192ea57ac4315aff093714b594fba9883b7fe33ad8a8213",
+    "retrieved": "2026-11-08"
+  },
+  "fred_gdp": {
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=GDP",
+    "path": "raw/fred/GDP.csv",
+    "bytes": 6419,
+    "sha256": "209e45690e4a85a6e99578c0a2ad6f1860875f61824dd2f67f9cba25386abd9e",
+    "retrieved": "2026-11-08"
+  },
+  "fred_gdpc1": {
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=GDPC1",
+    "path": "raw/fred/GDPC1.csv",
+    "bytes": 6548,
+    "sha256": "1c6c6e9f59e383e20c849dd299175c7a307526c09abdc18f18da9754fc5b3343",
+    "retrieved": "2026-11-08"
+  },
+  "fred_gdpdef": {
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=GDPDEF",
+    "path": "raw/fred/GDPDEF.csv",
+    "bytes": 5803,
+    "sha256": "30bb0472781765e94efbbeaf63f0056106c5ff3786f6713485d3daff182b6010",
+    "retrieved": "2026-11-08"
+  },
+  "fred_gs10": {
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=GS10",
+    "path": "raw/fred/GS10.csv",
+    "bytes": 14222,
+    "sha256": "018e609eb98c52ec8d2cf0ea9f8e1450c24974c31cca455cc19717a77703af78",
+    "retrieved": "2026-11-08"
+  },
+  "fred_ophnfb": {
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=OPHNFB",
+    "path": "raw/fred/OPHNFB.csv",
+    "bytes": 5803,
+    "sha256": "22388ed7f795285daabcbb663e5064fc357261aacd4d76304c8bdf479e877d24",
+    "retrieved": "2026-11-08"
+  },
+  "fred_payems": {
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=PAYEMS",
+    "path": "raw/fred/PAYEMS.csv",
+    "bytes": 18423,
+    "sha256": "968f9252d00246e2b6cf40307e01eef7a413ec936fcc45c7498347a509a2dc32",
+    "retrieved": "2026-11-08"
+  },
+  "fred_spdyntfrtinusa": {
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=SPDYNTFRTINUSA",
+    "path": "raw/fred/SPDYNTFRTINUSA.csv",
+    "bytes": 1202,
+    "sha256": "cdaa211161d52f730638ace4b3362f04550ba5bdbc6da6aeeb6c0fff5e1aab53",
+    "retrieved": "2026-11-08"
+  },
+  "fred_tb3ms": {
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=TB3MS",
+    "path": "raw/fred/TB3MS.csv",
+    "bytes": 17881,
+    "sha256": "33fae406051a658c316580f8e8b5e461157e6663bc03b35648cc7cd3e89ee26b",
+    "retrieved": "2026-11-08"
+  },
+  "fred_unrate": {
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE",
+    "path": "raw/fred/UNRATE.csv",
+    "bytes": 14226,
+    "sha256": "fb669461abc34e00324b940be6bad1c7f89117652f28587196a7b8bf4a9f56a1",
+    "retrieved": "2026-11-08"
+  },
+  "irs_soi_2023_t11": {
+    "url": "https://www.irs.gov/pub/irs-soi/23in11si.xls",
+    "path": "raw/irs/23in11si.xls",
+    "bytes": 54272,
+    "sha256": "842da11fe09123796c861e919d16011ef161338de1c172d39064bdfa666aca17",
+    "retrieved": "2026-11-08"
+  },
+  "irs_soi_2023_t14": {
+    "url": "https://www.irs.gov/pub/irs-soi/23in14ar.xls",
+    "path": "raw/irs/23in14ar.xls",
+    "bytes": 115712,
+    "sha256": "b6c1f87fbb5533417e195f6938538e5de09b6a0825a6a54346bf9363a18d96af",
+    "retrieved": "2026-11-08"
+  },
+  "irs_w2_2023_t1": {
+    "url": "https://www.irs.gov/pub/irs-soi/23in01w2all.xlsx",
+    "path": "raw/irs/23in01w2all.xlsx",
+    "bytes": 59444,
+    "sha256": "79fff2fafed192a35126843f5c0a36a22e76a15f65a3af1fb869e0b9a8886c3c",
+    "retrieved": "2026-11-08"
+  },
+  "omb_hist01z2": {
+    "url": "https://www.whitehouse.gov/wp-content/uploads/2026/04/hist01z2_fy2027.xlsx",
+    "path": "raw/omb/hist01z2_fy2027.xlsx",
+    "bytes": 16491,
+    "sha256": "c03b39ff14f203587c498231e375bc9448055a44a9dab8d35cbaf70ccea82b43",
+    "retrieved": "2026-11-08"
+  },
+  "omb_hist02z1": {
+    "url": "https://www.whitehouse.gov/wp-content/uploads/2026/04/hist02z1_fy2027.xlsx",
+    "path": "raw/omb/hist02z1_fy2027.xlsx",
+    "bytes": 12393,
+    "sha256": "1212da86947a71d9a0268e23d3de789402bcfb80b308cd48a32926a65b2e7bc3",
+    "retrieved": "2026-11-08"
+  },
+  "omb_hist02z3": {
+    "url": "https://www.whitehouse.gov/wp-content/uploads/2026/04/hist02z3_fy2027.xlsx",
+    "path": "raw/omb/hist02z3_fy2027.xlsx",
+    "bytes": 15637,
+    "sha256": "5885357458f8e58dfb7dbab87a77dcb34057af0f002afe199ce4f93e793cf9af",
+    "retrieved": "2026-11-08"
+  },
+  "omb_hist03z1": {
+    "url": "https://www.whitehouse.gov/wp-content/uploads/2026/04/hist03z1_fy2027.xlsx",
+    "path": "raw/omb/hist03z1_fy2027.xlsx",
+    "bytes": 40892,
+    "sha256": "47864b5078698919c3237038ad7296fb7aeb62f6942c3d8acccf98ad0a7122f7",
+    "retrieved": "2026-11-08"
+  },
+  "omb_hist07z1": {
+    "url": "https://www.whitehouse.gov/wp-content/uploads/2026/04/hist07z1_fy2027.xlsx",
+    "path": "raw/omb/hist07z1_fy2027.xlsx",
+    "bytes": 17295,
+    "sha256": "c3cfce645fe7e4eb9beeb46a970e2b0b30301f02f03f3e5461e9950538641ff9",
+    "retrieved": "2026-11-08"
+  },
+  "omb_hist08z4": {
+    "url": "https://www.whitehouse.gov/wp-content/uploads/2026/04/hist08z4_fy2027.xlsx",
+    "path": "raw/omb/hist08z4_fy2027.xlsx",
+    "bytes": 10325,
+    "sha256": "abe50c2e6a6393742501cee4c3d9577652603b6beae0546667dbe57d0c59cd88",
+    "retrieved": "2026-11-08"
+  },
+  "omb_hist10z1": {
+    "url": "https://www.whitehouse.gov/wp-content/uploads/2026/04/hist10z1_fy2027.xlsx",
+    "path": "raw/omb/hist10z1_fy2027.xlsx",
+    "bytes": 13680,
+    "sha256": "a96b9aba7ece50daf1c04d26a8036dd758be47da825a31869df3ab450cb1bd53",
+    "retrieved": "2026-11-08"
+  },
+  "omb_hist13z1": {
+    "url": "https://www.whitehouse.gov/wp-content/uploads/2026/04/hist13z1_fy2027.xlsx",
+    "path": "raw/omb/hist13z1_fy2027.xlsx",
+    "bytes": 62729,
+    "sha256": "111cedfef35ac5cbcba312af1a7e39b12ab6e984dda3f373f9ef602294066ce9",
+    "retrieved": "2026-11-08"
+  },
+  "treasury_avg_interest_rates": {
+    "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/avg_interest_rates?sort=-record_date&page%5Bsize%5D=600&format=csv",
+    "path": "raw/treasury/avg_interest_rates.csv",
+    "bytes": 61417,
+    "sha256": "f3a8630a5fbf3ce4c413e9f3ff9de74db19e9835b3377afe3a9a15aa176184a1",
+    "retrieved": "2026-11-08"
+  },
+  "treasury_debt_to_penny": {
+    "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_to_penny?sort=-record_date&page%5Bsize%5D=400&format=csv",
+    "path": "raw/treasury/debt_to_penny.csv",
+    "bytes": 43435,
+    "sha256": "01a1c0b10e431a48519f3cc6f4889ca385867288d392b07790bbd9a0f6a4a9ca",
+    "retrieved": "2026-11-08"
+  }
+}
