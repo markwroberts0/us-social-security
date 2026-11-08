@@ -116,3 +116,15 @@ def test_unreachable_solvency_target_is_left_out():
     with pytest.warns(UserWarning, match="left out"):
         packages = solvency_packages(paths, target=1.01)  # no lever reaches more than every path
     assert packages == {}
+
+
+def test_depletion_year_flows_reconcile():
+    # In the year reserves run out, what came in (reserves, taxes, interest)
+    # equals what went out (benefits paid and administration).
+    r = baseline_model().run(baseline_paths())
+    k = int(np.floor(r.ss_depletion_year[0])) - int(r.years[0])
+    inflow = (r.ss_assets[0, k - 1] + r.ss_payroll_tax[0, k] + r.ss_general_revenue[0, k]
+              + r.ss_benefit_tax[0, k] + r.ss_interest[0, k])
+    outflow = r.paid_benefits[0, k] * r.ss_cost[0, k] / r.scheduled_benefits[0, k]
+    assert r.ss_assets[0, k] == 0
+    assert inflow == pytest.approx(outflow, rel=1e-9)

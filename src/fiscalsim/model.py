@@ -377,8 +377,10 @@ class Model:
             short = A_end < 0
             payable = np.ones(N)
             if short.any():
-                # Reserves run out this year: pay what income and remaining reserves cover.
-                avail = A_start + payroll_tax + gr + np.maximum(interest, 0) * 0.5
+                # Reserves run out this year: pay what income, the interest the
+                # reserves earned before they ran out, and the reserves cover,
+                # so the year's flows reconcile with ending reserves of zero.
+                avail = A_start + payroll_tax + gr + interest
                 ratio = avail / (sched * (1 + c.admin_rate - tob))
                 payable = np.where(short, np.clip(ratio, 0.0, 1.0), 1.0)
                 newly = short & np.isinf(ss_dep)
@@ -418,7 +420,7 @@ class Model:
             hi_pay = np.ones(N)
             hshort = A_hi_end < 0
             if hshort.any():
-                hi_pay = np.where(hshort, np.clip((A_hi + hi_income) / hi_cost, 0, 1), 1.0)
+                hi_pay = np.where(hshort, np.clip((A_hi + hi_income + hi_int) / hi_cost, 0, 1), 1.0)
                 newly = hshort & np.isinf(hi_dep)
                 gap = hi_cost - hi_income - hi_int
                 frac = np.clip(A_hi / np.maximum(gap, 1.0), 0.0, 0.999)
