@@ -47,13 +47,11 @@ def _list() -> int:
 
 
 def _run(args) -> int:
-    from .assumptions import trustees_2026
-    from .report import write_report
-    from .runner import Run, run_policies
-    from .scenarios import library, solvency_packages
-    from .stochastic import draw_paths
     from .calibrate import baseline_model
     from .metrics import summarize
+    from .report import write_report
+    from .runner import Run, futures, run_policies
+    from .scenarios import library, solvency_packages
 
     lib = library()
     keys = list(lib) if args.policies == "all" else ["current_law"] + args.policies.split(",")
@@ -62,12 +60,14 @@ def _run(args) -> int:
         print(f"unknown policies: {', '.join(unknown)} (see `python -m fiscalsim list`)")
         return 2
     t = time.time()
-    runs = run_policies({k: lib[k] for k in keys}, sims=args.sims, seed=args.seed)
+    # One set of futures for the options, the solvency sizing and the
+    # dashboard, so every comparison is on the same paths.
+    paths = futures(args.sims, args.seed)
+    runs = run_policies({k: lib[k] for k in keys}, paths=paths)
     det = run_policies({"current_law": lib["current_law"]}, sims=1)
     print(f"{len(runs)} policies x {args.sims:,} paths in {time.time() - t:.1f}s")
     solvency = {}
     if args.solvency:
-        paths = draw_paths(trustees_2026(), args.sims, seed=args.seed)
         base = runs["current_law"].results
         for k, pol in solvency_packages(paths, args.solvency).items():
             r = baseline_model(pol).run(paths)
@@ -79,7 +79,6 @@ def _run(args) -> int:
     if args.dashboard:
         from .dashboard import export
 
-        paths = draw_paths(trustees_2026(), args.sims, seed=args.seed)
         files = export(runs, solvency, paths, Path(args.dashboard), args.sims, args.seed)
         print(f"wrote {len(files)} dashboard datasets to {args.dashboard}")
     return 0
