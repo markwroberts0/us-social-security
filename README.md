@@ -14,7 +14,7 @@ python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"
 .venv/bin/python -m pytest
 ```
 
-A full run (19 options and 4 solved packages over 2,000 futures) takes about a minute on a laptop. The processed data is committed, so none of this needs a network connection. To refresh the data, run `python -m fiscalsim.data fetch` and then `python -m fiscalsim.data build`.
+A full run (19 options and 4 solved packages over 2,000 futures) takes about a minute on a laptop. Add `--dashboard DIR` to also write the seven JSON datasets behind the shareable dashboard, whose page is `dashboard/index.html` (it runs inside a claude.ai Dashboard artifact, which supplies its data loader and d3). The processed data is committed, so none of this needs a network connection. To refresh the data, run `python -m fiscalsim.data fetch` and then `python -m fiscalsim.data build`.
 
 ## What it finds (seed 2026, 2,000 futures)
 
