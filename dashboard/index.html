@@ -1,0 +1,801 @@
+<meta name="dash-one-writer">
+<style>
+/* Layout: one reading column of sections; charts in cards that pair up when wide. Every color is a dashboard theme token. */
+.ss { max-width: 76rem; margin-inline: auto; display: grid; gap: var(--cds-gap-xl); font-family: var(--font-anthropic-sans); color: var(--color-fg); }
+.ss-head { display: grid; gap: var(--cds-gap-sm); }
+.ss-title { margin: 0; font-family: var(--font-anthropic-serif); font-weight: 400; font-size: calc(var(--cds-font-size-title) * 1.4); line-height: 1.15; text-wrap: balance; }
+.ss-take { margin: 0; max-width: 46rem; font-size: var(--cds-font-size-body); line-height: 1.6; }
+.ss .ss-take b, .ss .ss-n { font-weight: var(--cds-font-weight-medium); font-variant-numeric: tabular-nums; }
+.ss-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: var(--cds-gap-md); }
+.ss-tile { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); display: grid; gap: var(--cds-gap-xs); align-content: start; min-width: 0; }
+.ss-tile-label, .ss-stat-label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.ss-tile-value { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: calc(var(--cds-font-size-title) * 1.4); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.ss-tile-note { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.45; }
+.ss-section { display: grid; gap: var(--cds-gap-md); min-width: 0; }
+.ss-h2 { margin: 0; font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); text-wrap: balance; }
+.ss-lede { margin: 0; max-width: 46rem; color: var(--color-fg-muted); line-height: 1.55; }
+.ss-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: var(--cds-gap-md); }
+.ss-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); display: grid; gap: var(--cds-gap-sm); align-content: start; min-width: 0; }
+.ss-card-title { margin: 0; font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); text-wrap: balance; }
+.ss-note { margin: 0; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); line-height: 1.45; max-width: 46rem; }
+.ss-legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-xs) var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.ss-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.ss-sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; flex: none; }
+.ss-chart { position: relative; min-height: 250px; }
+.ss-chart-hist { min-height: 220px; }
+.ss-chart-tall { min-height: 560px; }
+.ss-chart-debt { min-height: 280px; }
+.ss-svg { display: block; }
+.ss-tick { fill: var(--color-fg-muted); font-size: var(--cds-font-size-caption); font-family: var(--font-anthropic-sans); font-variant-numeric: tabular-nums; }
+.ss-lab { fill: var(--color-fg); font-size: var(--cds-font-size-caption); font-family: var(--font-anthropic-sans); font-variant-numeric: tabular-nums; }
+.ss-gridline { stroke: var(--cds-chart-grid); stroke-width: 1; }
+.ss-axisline { stroke: var(--cds-chart-axis); stroke-width: 1; }
+.ss-refline { stroke: var(--cds-chart-reference); stroke-width: 1; }
+.ss-refdash { stroke: var(--cds-chart-reference); stroke-width: 1; stroke-dasharray: 4 3; }
+.ss-tip { position: absolute; pointer-events: none; z-index: 2; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); line-height: 1.5; white-space: nowrap; color: var(--color-fg); }
+.ss-tip[hidden] { display: none; }
+.ss-tip-head { color: var(--cds-text-secondary); }
+.ss-tip-row { display: flex; align-items: center; gap: 6px; }
+.ss-fail { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: inherit; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+.ss-fail-dot { width: 0.375rem; height: 0.375rem; border-radius: 50%; background: var(--color-bad); }
+.ss-scroll { overflow-x: auto; min-width: 0; }
+.ss-table { width: 100%; border-collapse: collapse; font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
+.ss-table th, .ss-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--color-border-line); vertical-align: top; }
+.ss-table th { color: var(--color-fg-muted); font-weight: var(--cds-font-weight-medium); }
+.ss-opts th:nth-child(n+3), .ss-opts td:nth-child(n+3) { text-align: right; white-space: nowrap; }
+.ss-pkgs th:nth-child(n+4), .ss-pkgs td:nth-child(n+4) { text-align: right; white-space: nowrap; }
+.ss-drivers th:nth-child(n+2):not(:last-child), .ss-drivers td:nth-child(n+2):not(:last-child) { text-align: right; white-space: nowrap; }
+.ss-fit th:nth-child(2), .ss-fit td:nth-child(2), .ss-fit th:nth-child(3), .ss-fit td:nth-child(3) { text-align: right; white-space: nowrap; }
+.ss-opts td:first-child { font-weight: var(--cds-font-weight-medium); }
+.ss-sort { all: unset; cursor: pointer; border-radius: 2px; }
+.ss-sort:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.ss-opts th[aria-sort="ascending"] .ss-sort::after { content: " \2191"; }
+.ss-opts th[aria-sort="descending"] .ss-sort::after { content: " \2193"; }
+.ss-pick { display: flex; flex-wrap: wrap; align-items: center; gap: var(--cds-gap-sm); }
+.ss-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: var(--cds-gap-md); }
+.ss-stat { display: grid; gap: 2px; align-content: start; min-width: 0; }
+.ss-stat-value { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); line-height: 1.15; font-variant-numeric: tabular-nums; }
+.ss-details { border-top: 1px solid var(--color-border-line); padding-block: var(--cds-pad-md) 0; }
+.ss-details > summary { cursor: pointer; font-weight: var(--cds-font-weight-medium); }
+.ss-details-body { display: grid; gap: var(--cds-gap-md); padding-block: var(--cds-pad-md) 0; max-width: 52rem; }
+.ss-details-body p, .ss-details-body ul { margin: 0; line-height: 1.55; }
+.ss-details-body ul { padding-inline-start: 1.2rem; display: grid; gap: var(--cds-gap-xs); }
+.ss-h3 { margin: 0; font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); }
+.ss-dl { display: grid; grid-template-columns: minmax(9rem, 13rem) 1fr; gap: var(--cds-gap-xs) var(--cds-gap-md); margin: 0; }
+.ss-dl dt { font-weight: var(--cds-font-weight-medium); }
+.ss-dl dd { margin: 0; color: var(--color-fg-muted); line-height: 1.5; }
+@media (max-width: 30rem) { .ss-dl { grid-template-columns: 1fr; } .ss-dl dd { margin-block-end: var(--cds-gap-xs); } }
+.ss a { color: inherit; }
+.ss [data-dash-source-state="empty"] { color: transparent; }
+.ss [data-dash-source-state="refreshing"] { opacity: 0.5; transition: opacity var(--cds-dur-slow); }
+</style>
+
+<div class="ss" id="outlook">
+  <header class="ss-head" id="summary">
+    <h1 class="ss-title">Social Security Outlook</h1>
+    <p class="ss-take">Under current law, Social Security's trust funds run out in
+      <b class="dash-skeleton" data-draw="fig" data-source="options" data-field="runs_out" data-where="key=current_law">—</b>, the median of
+      <b class="dash-skeleton" data-draw="fig" data-source="run_info" data-field="sims" data-row="0" data-fmt="int">—</b> simulated futures, and between
+      <b class="dash-skeleton" data-draw="fig" data-source="options" data-field="runs_out_p10" data-where="key=current_law">—</b> and
+      <b class="dash-skeleton" data-draw="fig" data-source="options" data-field="runs_out_p90" data-where="key=current_law">—</b> in
+      <span data-draw="const" data-const="b80">—</span> of them. After that, incoming taxes pay
+      <b class="dash-skeleton" data-draw="fig" data-source="options" data-field="payable_2035" data-where="key=current_law" data-fmt="pct0">—</b> of scheduled benefits, falling to
+      <b class="dash-skeleton" data-draw="fig" data-source="options" data-field="payable_2075" data-where="key=current_law" data-fmt="pct0">—</b> by 2075.</p>
+  </header>
+
+  <section class="ss-tiles" id="headline" aria-label="Headline figures">
+    <div class="ss-tile" id="tile-runs-out">
+      <div class="ss-tile-label">Trust funds run out (median year)</div>
+      <div class="ss-tile-value dash-skeleton" data-draw="fig" data-source="options" data-field="runs_out" data-where="key=current_law">—</div>
+      <div class="ss-tile-note"><span data-draw="const" data-const="b80">—</span> of futures:
+        <span class="dash-skeleton" data-draw="fig" data-source="options" data-field="runs_out_p10" data-where="key=current_law">—</span> to
+        <span class="dash-skeleton" data-draw="fig" data-source="options" data-field="runs_out_p90" data-where="key=current_law">—</span></div>
+    </div>
+    <div class="ss-tile" id="tile-balance">
+      <div class="ss-tile-label">75-year actuarial balance</div>
+      <div class="ss-tile-value dash-skeleton" data-draw="fig" data-source="options" data-field="balance_p50" data-where="key=current_law" data-fmt="pctpt">—</div>
+      <div class="ss-tile-note">of taxable payroll; <span data-draw="const" data-const="b80">—</span> of futures:
+        <span class="dash-skeleton" data-draw="fig" data-source="options" data-field="balance_p10" data-where="key=current_law" data-fmt="num2">—</span> to
+        <span class="dash-skeleton" data-draw="fig" data-source="options" data-field="balance_p90" data-where="key=current_law" data-fmt="num2">—</span></div>
+    </div>
+    <div class="ss-tile" id="tile-payable">
+      <div class="ss-tile-label">Benefits payable once reserves are gone</div>
+      <div class="ss-tile-value dash-skeleton" data-draw="fig" data-source="options" data-field="payable_2035" data-where="key=current_law" data-fmt="pct0">—</div>
+      <div class="ss-tile-note">of scheduled benefits in 2035, and
+        <span class="dash-skeleton" data-draw="fig" data-source="options" data-field="payable_2075" data-where="key=current_law" data-fmt="pct0">—</span> in 2075</div>
+    </div>
+    <div class="ss-tile" id="tile-debt">
+      <div class="ss-tile-label">Federal debt in 2050</div>
+      <div class="ss-tile-value dash-skeleton" data-draw="fig" data-source="options" data-field="debt_2050" data-where="key=current_law" data-fmt="pct0">—</div>
+      <div class="ss-tile-note">of GDP, held by the public; <span data-draw="const" data-const="b80">—</span> of futures:
+        <span class="dash-skeleton" data-draw="fig" data-source="options" data-field="debt_2050_p10" data-where="key=current_law" data-fmt="pct0">—</span> to
+        <span class="dash-skeleton" data-draw="fig" data-source="options" data-field="debt_2050_p90" data-where="key=current_law" data-fmt="pct0">—</span></div>
+    </div>
+  </section>
+
+  <section class="ss-section" id="runs-out">
+    <h2 class="ss-h2">When the trust funds run out</h2>
+    <div class="ss-pair">
+      <article class="ss-card" id="reserves-left">
+        <h3 class="ss-card-title">Reserves left under current law</h3>
+        <p class="ss-note">Reserves at the start of each year as a percent of that year's cost. Line: median. Shading: the middle
+          <span data-draw="const" data-const="b50">—</span>, <span data-draw="const" data-const="b80">—</span> and
+          <span data-draw="const" data-const="b90">—</span> of futures.</p>
+        <div class="ss-chart dash-skeleton" id="chart-reserves" data-draw="reserves" data-source="paths"></div>
+      </article>
+      <article class="ss-card" id="depletion-year">
+        <h3 class="ss-card-title">Year the reserves run out</h3>
+        <p class="ss-note">Percent of simulated futures in each quarter of a year. The dashed line marks the median.</p>
+        <div class="ss-chart ss-chart-hist dash-skeleton" id="chart-depletion" data-draw="depletion-hist" data-source="depletion options"></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="ss-section" id="after-depletion">
+    <h2 class="ss-h2">What can be paid after that</h2>
+    <div class="ss-pair">
+      <article class="ss-card" id="payable-share">
+        <h3 class="ss-card-title">Scheduled benefits that can be paid, current law</h3>
+        <p class="ss-note">Once reserves are gone, benefits fall to what payroll taxes and taxes on benefits bring in that year.</p>
+        <div class="ss-chart dash-skeleton" id="chart-payable" data-draw="payable" data-source="paths"></div>
+      </article>
+      <article class="ss-card" id="cost-and-income">
+        <h3 class="ss-card-title">Scheduled cost and income</h3>
+        <p class="ss-note">Percent of taxable payroll. Cost climbs into the 2080s as longer lives and lower fertility leave fewer workers per beneficiary.</p>
+        <div class="ss-legend"><span><i class="ss-sw" data-color="0"></i>Cost</span><span><i class="ss-sw" data-color="1"></i>Income</span></div>
+        <div class="ss-chart dash-skeleton" id="chart-cost-income" data-draw="cost-income" data-source="paths"></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="ss-section" id="options">
+    <h2 class="ss-h2">How each option changes the 75-year balance</h2>
+    <p class="ss-lede">Every option runs on the same simulated futures and is valued at current-law interest rates, as the Social Security actuaries score proposals. A balance of zero closes the 75-year gap.</p>
+    <article class="ss-card" id="balance-by-option">
+      <h3 class="ss-card-title">75-year actuarial balance, percent of taxable payroll</h3>
+      <p class="ss-note">Dot: median. Bar: the middle <span data-draw="const" data-const="b80">—</span> of futures. The dashed line is current law.</p>
+      <div class="ss-chart ss-chart-tall dash-skeleton" id="chart-options" data-draw="dot-range" data-source="options"></div>
+    </article>
+    <article class="ss-card" id="all-options">
+      <h3 class="ss-card-title">All options</h3>
+      <p class="ss-note">Medians across futures, and the share of futures in which reserves last through each year. Select a column heading to sort.</p>
+      <div class="ss-scroll">
+        <table class="ss-table ss-opts" id="options-table" data-source="options" data-row-key="key">
+          <thead>
+            <tr>
+              <th data-field="name" aria-sort="none"><button type="button" class="ss-sort">Option</button></th>
+              <th data-field="group" aria-sort="none"><button type="button" class="ss-sort">Kind</button></th>
+              <th data-field="change_p50" aria-sort="descending"><button type="button" class="ss-sort">Change in balance</button></th>
+              <th data-field="balance_p50" aria-sort="none"><button type="button" class="ss-sort">Balance</button></th>
+              <th data-field="runs_out" aria-sort="none"><button type="button" class="ss-sort">Runs out</button></th>
+              <th data-field="solvent_2050" aria-sort="none"><button type="button" class="ss-sort">Solvent through 2050</button></th>
+              <th data-field="solvent_2100" aria-sort="none"><button type="button" class="ss-sort">Through 2100</button></th>
+              <th data-field="payable_2075" aria-sort="none"><button type="button" class="ss-sort">Payable in 2075</button></th>
+              <th data-field="debt_2050" aria-sort="none"><button type="button" class="ss-sort">Debt in 2050</button></th>
+            </tr>
+          </thead>
+          <tbody data-draw="options-table"></tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+
+  <section class="ss-section" id="compare">
+    <h2 class="ss-h2">Compare one option with current law</h2>
+    <div class="ss-pick">
+      <label class="ss-note" for="option-picker">Option</label>
+      <select class="dash-select" id="option-picker" data-draw="option-picker" data-source="options"></select>
+    </div>
+    <p class="ss-lede dash-skeleton" data-draw="pick-fig" data-source="options" data-field="description">—</p>
+    <div class="ss-stats">
+      <div class="ss-stat">
+        <span class="ss-stat-label">Runs out (median year)</span>
+        <span class="ss-stat-value dash-skeleton" data-draw="pick-fig" data-source="options" data-field="runs_out">—</span>
+        <span class="ss-note">Current law: <span class="dash-skeleton" data-draw="fig" data-source="options" data-field="runs_out" data-where="key=current_law">—</span></span>
+      </div>
+      <div class="ss-stat">
+        <span class="ss-stat-label">Change in 75-year balance</span>
+        <span class="ss-stat-value dash-skeleton" data-draw="pick-fig" data-source="options" data-field="change_p50" data-fmt="signed2">—</span>
+        <span class="ss-note">percent of taxable payroll</span>
+      </div>
+      <div class="ss-stat">
+        <span class="ss-stat-label">Futures solvent through 2100</span>
+        <span class="ss-stat-value dash-skeleton" data-draw="pick-fig" data-source="options" data-field="solvent_2100" data-fmt="pct0">—</span>
+        <span class="ss-note">Through 2050: <span class="dash-skeleton" data-draw="pick-fig" data-source="options" data-field="solvent_2050" data-fmt="pct0">—</span></span>
+      </div>
+      <div class="ss-stat">
+        <span class="ss-stat-label">Federal debt in 2050</span>
+        <span class="ss-stat-value dash-skeleton" data-draw="pick-fig" data-source="options" data-field="debt_2050" data-fmt="pct0">—</span>
+        <span class="ss-note">of GDP; current law: <span class="dash-skeleton" data-draw="fig" data-source="options" data-field="debt_2050" data-where="key=current_law" data-fmt="pct0">—</span></span>
+      </div>
+    </div>
+    <div class="ss-pair">
+      <article class="ss-card" id="compare-reserves">
+        <h3 class="ss-card-title">Reserves left</h3>
+        <p class="ss-note">Percent of a year's cost. The option's median with the middle <span data-draw="const" data-const="b80">—</span> of futures shaded, against current law's median.</p>
+        <div class="ss-legend"><span><i class="ss-sw" data-color="0"></i>Selected option</span><span><i class="ss-sw" data-color="muted"></i>Current law</span></div>
+        <div class="ss-chart dash-skeleton" id="chart-compare-reserves" data-draw="compare-reserves" data-source="paths options"></div>
+      </article>
+      <article class="ss-card" id="compare-payable">
+        <h3 class="ss-card-title">Scheduled benefits that can be paid</h3>
+        <p class="ss-note">Percent of scheduled benefits, same futures.</p>
+        <div class="ss-legend"><span><i class="ss-sw" data-color="0"></i>Selected option</span><span><i class="ss-sw" data-color="muted"></i>Current law</span></div>
+        <div class="ss-chart dash-skeleton" id="chart-compare-payable" data-draw="compare-payable" data-source="paths options"></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="ss-section" id="solvent-2100">
+    <h2 class="ss-h2">What it takes to stay solvent through 2100</h2>
+    <p class="ss-lede">Each package is sized by solving for its last lever, so that reserves stay positive through 2100 in
+      <span data-draw="const" data-const="target">—</span> of simulated futures. They are larger than what closes the 75-year balance on the middle path, because cost keeps climbing late in the period and the target is solvency in most futures, not on average.</p>
+    <article class="ss-card" id="packages">
+      <div class="ss-scroll">
+        <table class="ss-table ss-pkgs" id="packages-table" data-source="packages" data-row-key="key">
+          <thead>
+            <tr>
+              <th data-field="name">Package</th>
+              <th data-field="description">What changes</th>
+              <th data-field="lever">Solved for</th>
+              <th data-field="required_label">Required</th>
+              <th data-field="solvent_2100">Futures solvent through 2100</th>
+              <th data-field="debt_2050">Debt in 2050</th>
+            </tr>
+          </thead>
+          <tbody data-draw="packages-table"></tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+
+  <section class="ss-section" id="debt">
+    <h2 class="ss-h2">Federal debt</h2>
+    <article class="ss-card" id="debt-path">
+      <h3 class="ss-card-title">Debt held by the public, percent of GDP</h3>
+      <p class="ss-note">Current law with the middle <span data-draw="const" data-const="b50">—</span>, <span data-draw="const" data-const="b80">—</span> and <span data-draw="const" data-const="b90">—</span> of futures shaded; the other lines are medians. Spending and taxes outside Social Security and Medicare follow simple rules from 2025 actuals, not CBO projections, so read these as directions rather than forecasts.</p>
+      <div class="ss-legend">
+        <span><i class="ss-sw" data-color="0"></i>Current law</span>
+        <span><i class="ss-sw" data-color="1"></i>Pay full benefits by borrowing</span>
+        <span><i class="ss-sw" data-color="2"></i>Pay full benefits from income taxes</span>
+        <span><i class="ss-sw" data-color="3"></i>Revenue package</span>
+      </div>
+      <div class="ss-chart ss-chart-debt dash-skeleton" id="chart-debt" data-draw="debt" data-source="paths"></div>
+    </article>
+  </section>
+
+  <section class="ss-section" id="drivers">
+    <h2 class="ss-h2">What the simulated futures vary</h2>
+    <p class="ss-lede">Each future draws its own long-run level for every assumption, sized so the Trustees' low- and high-cost values sit near the edges of the range, plus year-to-year noise estimated from US data since 1983.</p>
+    <article class="ss-card" id="driver-ranges">
+      <div class="ss-scroll">
+        <table class="ss-table ss-drivers" id="drivers-table" data-source="drivers" data-row-key="driver">
+          <thead>
+            <tr>
+              <th data-field="driver">Assumption</th>
+              <th data-field="baseline">Trustees baseline</th>
+              <th data-field="p10">10th percentile</th>
+              <th data-field="p90">90th percentile</th>
+              <th data-field="unit">Unit</th>
+            </tr>
+          </thead>
+          <tbody data-draw="drivers-table"></tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+
+  <details class="ss-details" id="method">
+    <summary>How the model works, how it matches the Trustees, and what it leaves out</summary>
+    <div class="ss-details-body">
+      <dl class="ss-dl">
+        <dt>Trust funds</dt><dd>Social Security's retirement and disability funds combined (OASDI), as the Trustees' hypothetical combined fund.</dd>
+        <dt>Runs out</dt><dd>The year reserves can no longer pay full scheduled benefits; "after 2100" means they last through the projection.</dd>
+        <dt>75-year actuarial balance</dt><dd>Income minus cost over 2026 to 2100 in present value, as a percent of taxable payroll, counting today's reserves and an ending reserve of one year's cost, as the Trustees define it.</dd>
+        <dt>Payable share</dt><dd>What the trust funds can pay as a share of the benefits the current formula schedules.</dd>
+        <dt>Solvent through a year</dt><dd>The share of simulated futures in which reserves last to the end of that year.</dd>
+      </dl>
+
+      <h3 class="ss-h3">How the baseline matches the 2026 Trustees</h3>
+      <div class="ss-scroll">
+        <table class="ss-table ss-fit" id="fit-table" data-source="fit" data-row-key="measure">
+          <thead>
+            <tr>
+              <th data-field="measure">Measure</th>
+              <th data-field="model">This model</th>
+              <th data-field="trustees">2026 Trustees</th>
+              <th data-field="unit">Unit</th>
+            </tr>
+          </thead>
+          <tbody data-draw="fit-table"></tbody>
+        </table>
+      </div>
+
+      <h3 class="ss-h3">How it works</h3>
+      <p>Each year from 2025 to 2100 the model projects the population by single year of age and sex, covered wages and taxable payroll, Social Security benefits by age (wage-indexed when people turn 62, then raised by cost-of-living adjustments), Medicare's hospital and medical insurance, and the rest of the federal budget with interest on the debt. The baseline uses the 2026 Trustees' intermediate assumptions and is calibrated to the Trustees' published 75-year totals. The simulated futures vary fertility, mortality, immigration, inflation, wages, unemployment, interest rates, health costs and disability around that baseline. Scoring is static: people claim at the same ages and earn the same wages as under current law.</p>
+
+      <h3 class="ss-h3">Data</h3>
+      <p>Census Bureau population estimates, projections and the March 2026 Current Population Survey; the 2026 Medicare Trustees Report, which shares the Social Security Trustees' assumptions; OMB historical budget tables; IRS wage statistics; Treasury debt and interest data; and FRED for inflation, wages, unemployment and interest rates.</p>
+
+      <h3 class="ss-h3">What it leaves out</h3>
+      <ul>
+        <li>The Social Security Administration's own year-by-year tables, which its site does not serve to scripts. Several paths, including near-term immigration and the share of wages under the tax cap, are reasoned estimates until those tables are added.</li>
+        <li>CBO's long-term budget projections. The debt paths use simple rules for everything outside Social Security and Medicare.</li>
+        <li>Changes in behavior. A higher retirement age or tax rate does not change when people claim or how much they work.</li>
+        <li>Separate retirement and disability funds. The retirement fund alone would run out about a year earlier.</li>
+      </ul>
+
+      <p class="ss-note">This run: <span class="dash-skeleton" data-draw="fig" data-source="run_info" data-field="sims" data-row="0" data-fmt="int">—</span> futures, seed
+        <span class="dash-skeleton" data-draw="fig" data-source="run_info" data-field="seed" data-row="0">—</span>, generated
+        <span class="dash-skeleton" data-draw="fig" data-source="run_info" data-field="generated" data-row="0">—</span>. Model code and data:
+        <a href="https://github.com/markwroberts0/us-social-security">github.com/markwroberts0/us-social-security</a>.</p>
+    </div>
+  </details>
+</div>
+
+<script>
+(function () {
+  // Fixed references of the charts themselves, drawn wherever the words name them.
+  const CONSTS = { b50: '50%', b80: '80%', b90: '90%', target: '80%' };
+  const BANDS = [['p5', 'p95', 0.1], ['p10', 'p90', 0.16], ['p25', 'p75', 0.26]];
+  const DEFAULT_OPTION = 'package_balanced';
+  const MUTED = 'var(--cds-chart-muted)';
+  const color = (i) => dash.colors[i % dash.colors.length];
+  const fmt = {
+    text: (v) => String(v),
+    int: d3.format(','),
+    num2: d3.format('.2f'),
+    signed2: d3.format('+.2f'),
+    pct0: (v) => d3.format('.0f')(v) + '%',
+    pctpt: (v) => d3.format('.2f')(v) + '%',
+    pct1: (v) => d3.format('.1f')(v) + '%',
+  };
+
+  const status = (...ids) => {
+    const s = ids.map((id) => dash.data(id).status);
+    if (s.every((x) => x === 'ok')) return 'ok';
+    if (s.some((x) => x === 'loading')) return 'loading';
+    return 'error';
+  };
+  const rowsOf = (id) => {
+    const d = dash.data(id);
+    return d.status === 'ok' && Array.isArray(d.data) ? d.data : [];
+  };
+  const whereOf = (w) => (w || '').split('&').filter(Boolean).map((p) => p.split('=').map(decodeURIComponent));
+  const findRow = (rows, where) => {
+    const conds = whereOf(where);
+    return rows.find((r) => conds.every(([k, v]) => String(r[k]) === v));
+  };
+  const picked = () => dash.params().option || DEFAULT_OPTION;
+  const series = (option, name) => rowsOf('paths')
+    .filter((r) => r.option === option && r.series === name)
+    .sort((a, b) => a.year - b.year);
+
+  // Legend swatches take the series colors.
+  document.querySelectorAll('.ss [data-color]').forEach((el) => {
+    el.style.background = el.dataset.color === 'muted' ? MUTED : color(Number(el.dataset.color));
+  });
+
+  // --- Words and figures ---------------------------------------------------
+
+  function showText(el, text, s) {
+    el.textContent = s === 'ok' ? text : '—';
+    el.classList.toggle('dash-skeleton', s === 'loading');
+  }
+
+  function drawFigure(el) {
+    const src = el.dataset.source;
+    const s = status(src);
+    if (s !== 'ok') return showText(el, '—', s);
+    const rows = rowsOf(src);
+    const row = el.dataset.row != null ? rows[Number(el.dataset.row)] : findRow(rows, el.dataset.where);
+    const v = row ? row[el.dataset.field] : null;
+    showText(el, v == null ? '—' : (fmt[el.dataset.fmt || 'text'] || fmt.text)(v), 'ok');
+  }
+
+  dash.draw('const', (el) => { el.textContent = CONSTS[el.dataset.const] || '—'; });
+  dash.draw('fig', drawFigure);
+  dash.draw('pick-fig', (el) => {
+    el.dataset.where = 'key=' + encodeURIComponent(picked());
+    drawFigure(el);
+  });
+
+  // --- Chart scaffolding -------------------------------------------------------
+
+  function placeholder(el, s) {
+    el.replaceChildren();
+    el.classList.toggle('dash-skeleton', s === 'loading');
+    if (s === 'loading') return;
+    const box = document.createElement('div');
+    box.className = 'ss-fail';
+    const dot = document.createElement('span');
+    dot.className = 'ss-fail-dot';
+    const words = document.createElement('span');
+    words.textContent = 'Failed to load';
+    box.append(dot, words);
+    el.append(box);
+  }
+
+  function frame(el, height, label) {
+    el.replaceChildren();
+    el.classList.remove('dash-skeleton');
+    const W = Math.max(280, Math.floor(el.clientWidth || 640));
+    const svg = d3.select(el).append('svg').attr('class', 'ss-svg').attr('width', '100%')
+      .attr('viewBox', `0 0 ${W} ${height}`).attr('role', 'img').attr('aria-label', label);
+    const tip = d3.select(el).append('div').attr('class', 'ss-tip').property('hidden', true);
+    return { W, svg, tip };
+  }
+
+  function textWidth(svg, strings, cls) {
+    const g = svg.append('g').attr('class', cls);
+    let w = 0;
+    for (const s of strings) w = Math.max(w, g.append('text').text(s).node().getComputedTextLength());
+    g.remove();
+    return Math.ceil(w);
+  }
+
+  function place(tip, el, W, xv, yv) {
+    tip.property('hidden', false);
+    const k = el.clientWidth / W;
+    const tw = tip.node().offsetWidth;
+    let left = xv * k + 14;
+    if (left + tw > el.clientWidth) left = xv * k - tw - 14;
+    tip.style('left', Math.max(0, left) + 'px').style('top', Math.max(0, yv * k) + 'px');
+  }
+
+  function tipRow(tip, swatch, words) {
+    const row = tip.append('div').attr('class', 'ss-tip-row');
+    if (swatch) row.append('span').attr('class', 'ss-sw').style('background', swatch);
+    row.append('span').text(words);
+  }
+
+  // Lines over time: each series a median line, with percentile bands when asked.
+  function fan(el, cfg) {
+    const H = cfg.height;
+    const { W, svg, tip } = frame(el, H, cfg.label);
+    const yfmt = cfg.yfmt;
+    const ser = cfg.series
+      .map((s) => ({ ...s, rows: s.rows.filter((r) => r.year >= cfg.x0 && r.year <= cfg.x1) }))
+      .filter((s) => s.rows.length);
+    if (!ser.length) return;
+    let lo = d3.min(ser, (s) => d3.min(s.rows, (r) => (s.bands ? r.p5 : r.p50)));
+    let hi = d3.max(ser, (s) => d3.max(s.rows, (r) => (s.bands ? r.p95 : r.p50)));
+    if (cfg.ymin != null) lo = Math.min(lo, cfg.ymin);
+    if (cfg.ymax != null) hi = Math.max(hi, cfg.ymax);
+    const y = d3.scaleLinear([lo, hi], [H - 28, 12]).nice(5);
+    const yt = y.ticks(5);
+    const ends = ser.map((s) => {
+      const last = s.rows[s.rows.length - 1];
+      return { s, last, text: `${s.end} ${yfmt(last.p50)}` };
+    });
+    const m = { t: 12, b: 28, l: textWidth(svg, yt.map(yfmt), 'ss-tick') + 10, r: 22 };
+    const endW = textWidth(svg, ends.map((e) => e.text), 'ss-lab');
+    const showEnds = W - m.l - (endW + 18) >= 200;
+    if (showEnds) m.r = endW + 18;
+    y.range([H - m.b, m.t]);
+    const x = d3.scaleLinear([cfg.x0, cfg.x1], [m.l, W - m.r]);
+
+    const grid = svg.append('g');
+    grid.selectAll('line').data(yt).join('line').attr('class', 'ss-gridline')
+      .attr('x1', m.l).attr('x2', W - m.r).attr('y1', (v) => y(v)).attr('y2', (v) => y(v));
+    grid.selectAll('text').data(yt).join('text').attr('class', 'ss-tick')
+      .attr('x', m.l - 6).attr('y', (v) => y(v)).attr('dy', '0.32em').attr('text-anchor', 'end').text(yfmt);
+    const nx = Math.max(2, Math.min(8, Math.floor((W - m.l - m.r) / 70)));
+    svg.append('g').selectAll('text').data(x.ticks(nx).filter(Number.isInteger)).join('text')
+      .attr('class', 'ss-tick').attr('x', (v) => x(v)).attr('y', H - 8).attr('text-anchor', 'middle').text(d3.format('d'));
+    svg.append('line').attr('class', 'ss-axisline').attr('x1', m.l).attr('x2', W - m.r)
+      .attr('y1', H - m.b).attr('y2', H - m.b);
+
+    for (const s of ser) {
+      if (!s.bands) continue;
+      for (const [a, b, op] of BANDS) {
+        svg.append('path').datum(s.rows).attr('stroke', 'none').attr('fill-opacity', op).style('fill', s.color)
+          .attr('d', d3.area().x((r) => x(r.year)).y0((r) => y(r[a])).y1((r) => y(r[b])));
+      }
+    }
+    for (const s of ser) {
+      svg.append('path').datum(s.rows).attr('fill', 'none').style('stroke', s.color)
+        .attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round')
+        .attr('stroke-dasharray', s.dash || null)
+        .attr('d', d3.line().x((r) => x(r.year)).y((r) => y(r.p50)));
+    }
+
+    if (showEnds) {
+      const labs = ends.map((e) => ({ ...e, y: y(e.last.p50) })).sort((a, b) => a.y - b.y);
+      for (let i = 1; i < labs.length; i++) labs[i].y = Math.max(labs[i].y, labs[i - 1].y + 14);
+      const over = labs.length ? labs[labs.length - 1].y - (H - m.b) : 0;
+      if (over > 0) labs.forEach((l) => { l.y -= over; });
+      svg.append('g').selectAll('text').data(labs).join('text').attr('class', 'ss-lab')
+        .attr('x', W - m.r + 8).attr('y', (l) => l.y).attr('dy', '0.32em').text((l) => l.text);
+    }
+
+    const rule = svg.append('line').attr('class', 'ss-refline').attr('y1', m.t).attr('y2', H - m.b).style('opacity', 0);
+    const dots = svg.append('g').selectAll('circle').data(ser).join('circle').attr('r', 4)
+      .style('fill', (s) => s.color).style('stroke', 'var(--color-panel)').attr('stroke-width', 2).style('opacity', 0);
+    svg.append('rect').attr('x', m.l).attr('y', m.t).attr('width', Math.max(0, W - m.l - m.r))
+      .attr('height', Math.max(0, H - m.t - m.b)).attr('fill', 'transparent')
+      .on('pointermove', (ev) => {
+        const [px] = d3.pointer(ev, svg.node());
+        const yr = Math.max(cfg.x0, Math.min(cfg.x1, Math.round(x.invert(px))));
+        const at = ser.map((s) => s.rows.find((r) => r.year === yr));
+        rule.attr('x1', x(yr)).attr('x2', x(yr)).style('opacity', 1);
+        dots.attr('cx', x(yr)).attr('cy', (s, i) => (at[i] ? y(at[i].p50) : 0)).style('opacity', (s, i) => (at[i] ? 1 : 0));
+        tip.selectAll('*').remove();
+        tip.append('div').attr('class', 'ss-tip-head').text(String(yr));
+        ser.forEach((s, i) => {
+          const r = at[i];
+          if (!r) return;
+          const range = s.bands ? ` (middle ${CONSTS.b80}: ${cfg.tipfmt(r.p10)} to ${cfg.tipfmt(r.p90)})` : '';
+          tipRow(tip, ser.length > 1 ? s.color : null, `${s.name}: ${cfg.tipfmt(r.p50)}${range}`);
+        });
+        place(tip, el, W, x(yr), m.t);
+      })
+      .on('pointerleave', () => {
+        rule.style('opacity', 0);
+        dots.style('opacity', 0);
+        tip.property('hidden', true);
+      });
+  }
+
+  const pct0 = (v) => d3.format('.0f')(v) + '%';
+  const pct1 = (v) => d3.format('.1f')(v) + '%';
+
+  dash.draw('reserves', (el) => {
+    const s = status('paths');
+    if (s !== 'ok') return placeholder(el, s);
+    fan(el, {
+      label: 'Trust fund ratio under current law, 2026 to 2045',
+      height: 250, x0: 2026, x1: 2045, ymin: 0, yfmt: pct0, tipfmt: pct0,
+      series: [{ name: 'Current law', end: 'Median', color: color(0), bands: true, rows: series('current_law', 'trust_fund_ratio') }],
+    });
+  });
+
+  dash.draw('payable', (el) => {
+    const s = status('paths');
+    if (s !== 'ok') return placeholder(el, s);
+    fan(el, {
+      label: 'Share of scheduled benefits payable under current law, 2026 to 2100',
+      height: 250, x0: 2026, x1: 2100, ymin: 0, ymax: 100, yfmt: pct0, tipfmt: pct0,
+      series: [{ name: 'Current law', end: 'Median', color: color(0), bands: true, rows: series('current_law', 'payable_share') }],
+    });
+  });
+
+  dash.draw('cost-income', (el) => {
+    const s = status('paths');
+    if (s !== 'ok') return placeholder(el, s);
+    fan(el, {
+      label: 'Scheduled cost and income as a percent of taxable payroll, 2026 to 2100',
+      height: 250, x0: 2026, x1: 2100, yfmt: pct0, tipfmt: (v) => d3.format('.2f')(v) + '%',
+      series: [
+        { name: 'Cost', end: 'Cost', color: color(0), bands: true, rows: series('current_law', 'cost_rate') },
+        { name: 'Income', end: 'Income', color: color(1), bands: true, rows: series('current_law', 'income_rate') },
+      ],
+    });
+  });
+
+  function compare(el, name, label, cfg) {
+    const s = status('paths', 'options');
+    if (s !== 'ok') return placeholder(el, s);
+    const opt = findRow(rowsOf('options'), 'key=' + encodeURIComponent(picked()));
+    fan(el, {
+      label, height: 250, x0: 2026, x1: 2100, ymin: 0, yfmt: pct0, tipfmt: pct0, ...cfg,
+      series: [
+        { name: 'Current law', end: 'Current law', color: MUTED, bands: false, rows: series('current_law', name) },
+        { name: opt ? opt.name : 'Selected option', end: 'Option', color: color(0), bands: true, rows: series(picked(), name) },
+      ],
+    });
+  }
+  dash.draw('compare-reserves', (el) => compare(el, 'trust_fund_ratio', 'Trust fund ratio, selected option and current law'));
+  dash.draw('compare-payable', (el) => compare(el, 'payable_share', 'Share of scheduled benefits payable, selected option and current law', { ymax: 100 }));
+
+  dash.draw('debt', (el) => {
+    const s = status('paths');
+    if (s !== 'ok') return placeholder(el, s);
+    fan(el, {
+      label: 'Federal debt held by the public as a percent of GDP, 2025 to 2060',
+      height: 280, x0: 2025, x1: 2060, yfmt: pct0, tipfmt: pct0,
+      series: [
+        { name: 'Current law', end: 'Current law', color: color(0), bands: true, rows: series('current_law', 'debt_gdp') },
+        { name: 'Pay full benefits by borrowing', end: 'Borrowing', color: color(1), bands: false, rows: series('gr_borrow', 'debt_gdp') },
+        { name: 'Pay full benefits from income taxes', end: 'Income taxes', color: color(2), bands: false, dash: '5 4', rows: series('gr_income_tax', 'debt_gdp') },
+        { name: 'Revenue package', end: 'Revenue package', color: color(3), bands: false, rows: series('package_revenue', 'debt_gdp') },
+      ],
+    });
+  });
+
+  // Histogram of the year reserves run out, by quarter-year.
+  dash.draw('depletion-hist', (el) => {
+    const s = status('depletion', 'options');
+    if (s !== 'ok') return placeholder(el, s);
+    const bins = rowsOf('depletion').filter((r) => r.option === 'current_law' && r.bin < 2101).sort((a, b) => a.bin - b.bin);
+    const cl = findRow(rowsOf('options'), 'key=current_law');
+    const H = 220;
+    const { W, svg, tip } = frame(el, H, 'Distribution of the year reserves run out under current law');
+    if (!bins.length) return;
+    const y = d3.scaleLinear([0, d3.max(bins, (b) => b.share)], [H - 28, 20]).nice(4);
+    const yt = y.ticks(4);
+    const m = { t: 20, b: 28, l: textWidth(svg, yt.map(pct0), 'ss-tick') + 10, r: 22 };
+    y.range([H - m.b, m.t]);
+    const x0 = Math.floor(bins[0].bin);
+    const x1 = Math.ceil(bins[bins.length - 1].bin + 0.25);
+    const x = d3.scaleLinear([x0, x1], [m.l, W - m.r]);
+    const g = svg.append('g');
+    g.selectAll('line').data(yt).join('line').attr('class', 'ss-gridline')
+      .attr('x1', m.l).attr('x2', W - m.r).attr('y1', (v) => y(v)).attr('y2', (v) => y(v));
+    g.selectAll('text').data(yt).join('text').attr('class', 'ss-tick')
+      .attr('x', m.l - 6).attr('y', (v) => y(v)).attr('dy', '0.32em').attr('text-anchor', 'end').text(pct0);
+    const per = Math.max(1, Math.ceil((x1 - x0) / Math.max(2, Math.floor((W - m.l - m.r) / 52))));
+    svg.append('g').selectAll('text').data(d3.range(x0, x1 + 1, per)).join('text').attr('class', 'ss-tick')
+      .attr('x', (v) => x(v)).attr('y', H - 8).attr('text-anchor', 'middle').text(d3.format('d'));
+    svg.append('line').attr('class', 'ss-axisline').attr('x1', m.l).attr('x2', W - m.r).attr('y1', H - m.b).attr('y2', H - m.b);
+    const bw = Math.max(1, x(x0 + 0.25) - x(x0) - 2);
+    svg.append('g').selectAll('rect').data(bins).join('rect')
+      .attr('x', (b) => x(b.bin) + 1).attr('width', bw).attr('y', (b) => y(b.share))
+      .attr('height', (b) => Math.max(0, y(0) - y(b.share))).attr('rx', Math.min(2, bw / 2)).style('fill', color(0))
+      .on('pointerenter', (ev, b) => {
+        tip.selectAll('*').remove();
+        tip.append('div').attr('class', 'ss-tip-head').text(`${Math.floor(b.bin)}, quarter ${Math.round((b.bin % 1) * 4) + 1}`);
+        tipRow(tip, null, `${pct1(b.share)} of futures`);
+        place(tip, el, W, x(b.bin) + bw, y(b.share));
+      })
+      .on('pointerleave', () => tip.property('hidden', true));
+    if (cl && cl.depletion_p50 >= x0 && cl.depletion_p50 <= x1) {
+      const xm = x(cl.depletion_p50);
+      svg.append('line').attr('class', 'ss-refdash').attr('x1', xm).attr('x2', xm).attr('y1', m.t - 6).attr('y2', H - m.b);
+      const right = xm + 6 + 60 < W - m.r;
+      svg.append('text').attr('class', 'ss-lab').attr('x', right ? xm + 6 : xm - 6).attr('y', m.t - 8)
+        .attr('text-anchor', right ? 'start' : 'end').text(`Median ${d3.format('.1f')(cl.depletion_p50)}`);
+    }
+  });
+
+  // Each option's 75-year balance: median dot over its 10th-90th percentile bar.
+  dash.draw('dot-range', (el) => {
+    const s = status('options');
+    if (s !== 'ok') return placeholder(el, s);
+    const data = rowsOf('options').slice().sort((a, b) => b.balance_p50 - a.balance_p50);
+    const cl = data.find((r) => r.key === 'current_law');
+    const W0 = Math.max(280, Math.floor(el.clientWidth || 640));
+    const probe = frame(el, 10, 'Actuarial balance by option');
+    const nameW = textWidth(probe.svg, data.map((r) => r.name), 'ss-lab');
+    const stacked = nameW + 16 > W0 * 0.42;
+    const rh = stacked ? 44 : 28;
+    const m = { t: 28, b: 28, l: stacked ? 12 : nameW + 16, r: 22 };
+    const H = m.t + m.b + rh * data.length;
+    const { W, svg, tip } = frame(el, H, 'Seventy-five-year actuarial balance by option, median and middle 80 percent of futures');
+    const lo = d3.min(data, (r) => r.balance_p10);
+    const hi = Math.max(0.25, d3.max(data, (r) => r.balance_p90));
+    const x = d3.scaleLinear([lo, hi], [m.l, W - m.r]).nice();
+    const xt = x.ticks(Math.max(3, Math.floor((W - m.l - m.r) / 60)));
+    const tickFmt = xt.every(Number.isInteger) ? d3.format('d') : d3.format('.1f');
+    svg.append('g').selectAll('line').data(xt).join('line').attr('class', 'ss-gridline')
+      .attr('x1', (v) => x(v)).attr('x2', (v) => x(v)).attr('y1', m.t).attr('y2', H - m.b);
+    svg.append('g').selectAll('text').data(xt).join('text').attr('class', 'ss-tick')
+      .attr('x', (v) => x(v)).attr('y', H - 8).attr('text-anchor', 'middle').text(tickFmt);
+    svg.append('line').attr('class', 'ss-refline').attr('x1', x(0)).attr('x2', x(0)).attr('y1', m.t - 6).attr('y2', H - m.b);
+    svg.append('text').attr('class', 'ss-lab').attr('x', x(0) - 6).attr('y', m.t - 12).attr('text-anchor', 'end').text('Gap closed');
+    if (cl) {
+      svg.append('line').attr('class', 'ss-refdash').attr('x1', x(cl.balance_p50)).attr('x2', x(cl.balance_p50)).attr('y1', m.t - 6).attr('y2', H - m.b);
+      svg.append('text').attr('class', 'ss-lab').attr('x', x(cl.balance_p50) + 6).attr('y', m.t - 12).text('Current law');
+    }
+    const row = svg.append('g').selectAll('g').data(data).join('g')
+      .attr('transform', (r, i) => `translate(0,${m.t + i * rh})`);
+    const cy = stacked ? 30 : rh / 2;
+    row.append('text').attr('class', 'ss-lab').attr('x', stacked ? m.l : m.l - 10).attr('y', stacked ? 10 : rh / 2)
+      .attr('dy', '0.32em').attr('text-anchor', stacked ? 'start' : 'end').text((r) => r.name);
+    row.append('line').attr('x1', (r) => x(r.balance_p10)).attr('x2', (r) => x(r.balance_p90)).attr('y1', cy).attr('y2', cy)
+      .style('stroke', (r) => (r.key === 'current_law' ? MUTED : color(0))).attr('stroke-opacity', 0.45)
+      .attr('stroke-width', 6).attr('stroke-linecap', 'round');
+    row.append('circle').attr('cx', (r) => x(r.balance_p50)).attr('cy', cy).attr('r', 5)
+      .style('fill', (r) => (r.key === 'current_law' ? MUTED : color(0))).style('stroke', 'var(--color-panel)').attr('stroke-width', 2);
+    row.append('rect').attr('x', 0).attr('y', 0).attr('width', W).attr('height', rh).attr('fill', 'transparent')
+      .on('pointerenter', (ev, r) => {
+        tip.selectAll('*').remove();
+        tip.append('div').attr('class', 'ss-tip-head').text(r.name);
+        tipRow(tip, null, `Median balance: ${fmt.num2(r.balance_p50)}% of payroll`);
+        tipRow(tip, null, `Middle ${CONSTS.b80} of futures: ${fmt.num2(r.balance_p10)} to ${fmt.num2(r.balance_p90)}`);
+        tipRow(tip, null, `Runs out: ${r.runs_out}`);
+        const i = data.indexOf(r);
+        place(tip, el, W, x(r.balance_p50), m.t + i * rh + rh);
+      })
+      .on('pointerleave', () => tip.property('hidden', true));
+  });
+
+  // --- Tables -------------------------------------------------------------------
+
+  function fillBody(tbody, rows, cols, key) {
+    tbody.replaceChildren(...rows.map((r) => {
+      const tr = document.createElement('tr');
+      tr.dataset.key = r[key];
+      for (const [field, f] of cols) {
+        const td = document.createElement('td');
+        const v = r[field];
+        td.textContent = v == null ? '—' : (f ? f(v) : String(v));
+        tr.append(td);
+      }
+      return tr;
+    }));
+  }
+
+  const sort = { field: 'change_p50', dir: -1 };
+  const SORT_BY = { runs_out: 'depletion_p50' };
+  document.querySelectorAll('.ss-opts .ss-sort').forEach((button) => {
+    button.addEventListener('click', () => {
+      const th = button.closest('th');
+      const field = th.dataset.field;
+      const text = field === 'name' || field === 'group';
+      sort.dir = sort.field === field ? -sort.dir : (text ? 1 : -1);
+      sort.field = field;
+      document.querySelectorAll('.ss-opts th').forEach((t) => {
+        t.setAttribute('aria-sort', t === th ? (sort.dir > 0 ? 'ascending' : 'descending') : 'none');
+      });
+      dash.draw('options-table');
+    });
+  });
+
+  dash.draw('options-table', (tbody) => {
+    if (status('options') !== 'ok') return tbody.replaceChildren();
+    const f = SORT_BY[sort.field] || sort.field;
+    const rows = rowsOf('options').slice().sort((a, b) => {
+      const va = a[f];
+      const vb = b[f];
+      return (typeof va === 'string' ? va.localeCompare(vb) : va - vb) * sort.dir;
+    });
+    fillBody(tbody, rows, [
+      ['name'], ['group'], ['change_p50', fmt.signed2], ['balance_p50', fmt.num2], ['runs_out'],
+      ['solvent_2050', fmt.pct0], ['solvent_2100', fmt.pct0], ['payable_2075', fmt.pct0], ['debt_2050', fmt.pct0],
+    ], 'key');
+  });
+
+  dash.draw('packages-table', (tbody) => {
+    if (status('packages') !== 'ok') return tbody.replaceChildren();
+    fillBody(tbody, rowsOf('packages'), [
+      ['name'], ['description'], ['lever'], ['required_label'], ['solvent_2100', fmt.pct0], ['debt_2050', fmt.pct0],
+    ], 'key');
+  });
+
+  const driverFmt = (unit) => (unit === 'thousands' ? d3.format(',.0f') : d3.format('.2f'));
+  dash.draw('drivers-table', (tbody) => {
+    if (status('drivers') !== 'ok') return tbody.replaceChildren();
+    tbody.replaceChildren(...rowsOf('drivers').map((r) => {
+      const tr = document.createElement('tr');
+      tr.dataset.key = r.driver;
+      const f = driverFmt(r.unit);
+      for (const v of [r.driver, f(r.baseline), f(r.p10), f(r.p90), r.unit]) {
+        const td = document.createElement('td');
+        td.textContent = v;
+        tr.append(td);
+      }
+      return tr;
+    }));
+  });
+
+  dash.draw('fit-table', (tbody) => {
+    if (status('fit') !== 'ok') return tbody.replaceChildren();
+    tbody.replaceChildren(...rowsOf('fit').map((r) => {
+      const tr = document.createElement('tr');
+      tr.dataset.key = r.measure;
+      const f = r.unit === 'year' ? d3.format('d') : (r.unit === '$ trillions' ? d3.format(',.1f') : d3.format('.2f'));
+      for (const v of [r.measure, f(r.model), f(r.trustees), r.unit]) {
+        const td = document.createElement('td');
+        td.textContent = v;
+        tr.append(td);
+      }
+      return tr;
+    }));
+  });
+
+  // --- The option picker ------------------------------------------------------
+
+  dash.draw('option-picker', (sel) => {
+    const rows = status('options') === 'ok' ? rowsOf('options').filter((r) => r.key !== 'current_law') : [];
+    const groups = d3.group(rows, (r) => r.group);
+    sel.replaceChildren(...Array.from(groups, ([group, members]) => {
+      const og = document.createElement('optgroup');
+      og.label = group;
+      og.append(...members.map((r) => new Option(r.name, r.key)));
+      return og;
+    }));
+    sel.value = picked();
+    sel.onchange = () => dash.setParams({ option: sel.value });
+  });
+})();
+</script>
