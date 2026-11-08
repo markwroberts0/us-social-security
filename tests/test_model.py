@@ -107,3 +107,12 @@ def test_paying_full_benefits_by_borrowing_adds_debt():
     assert np.isinf(gr.ss_depletion_year[0])
     assert gr.debt[0, 25] > base.debt[0, 25] * 1.05
     assert tax.debt[0, 25] == pytest.approx(base.debt[0, 25], rel=0.02)
+
+
+def test_unreachable_solvency_target_is_left_out():
+    from fiscalsim.scenarios import solvency_packages
+
+    paths = draw_paths(trustees_2026(), 20, seed=3)
+    with pytest.warns(UserWarning, match="left out"):
+        packages = solvency_packages(paths, target=1.01)  # no lever reaches more than every path
+    assert packages == {}

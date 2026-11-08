@@ -7,6 +7,8 @@ count toward benefits.
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 from scipy.optimize import brentq
 
@@ -162,6 +164,12 @@ def solvency_packages(paths, target: float = 0.8) -> dict[str, Policy]:
     out = {}
     for key, (tpl, param, lo, hi) in templates.items():
         value, share = solve_probability(tpl, param, target, paths, lo, hi)
+        if not np.isfinite(value):
+            # Running a policy with a NaN lever would never register depletion
+            # and report full solvency, so leave the package out instead.
+            warnings.warn(f"{tpl.name}: no {param} up to {hi:g} keeps {target:.0%} of paths solvent through "
+                          f"2100 (best {share:.0%}); package left out", stacklevel=2)
+            continue
         label = f"{value * 100:.2f} points" if param == "payroll_rate_increase" else f"{value:.1%}"
         out[key] = tpl.with_(**{param: value}, description=f"{tpl.description} Solved: {param.replace('_', ' ')} = "
                                                             f"{label} ({share:.0%} of paths solvent through 2100).")
